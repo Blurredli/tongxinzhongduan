@@ -1,0 +1,1141 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DDS信号发生器交互仿真 V2</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', 'SimHei', sans-serif;
+            background: linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 100%);
+            min-height: 100vh;
+            color: #fff;
+            padding: 15px;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 2em;
+            margin-bottom: 5px;
+            background: linear-gradient(90deg, #00d4ff, #7b2cbf);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 20px;
+            font-size: 0.95em;
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 280px 1fr 300px;
+            gap: 15px;
+        }
+
+        .panel {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 12px;
+            padding: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .panel-title {
+            font-size: 1em;
+            font-weight: bold;
+            margin-bottom: 12px;
+            color: #00d4ff;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .panel-title::before {
+            content: '';
+            width: 3px;
+            height: 16px;
+            background: linear-gradient(180deg, #00d4ff, #7b2cbf);
+            border-radius: 2px;
+        }
+
+        /* 左侧控制面板 */
+        .left-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        /* 按键控制区 */
+        .keypad {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .key-btn {
+            padding: 15px 10px;
+            border: 2px solid #333;
+            border-radius: 10px;
+            background: linear-gradient(145deg, #1a1a2e, #252540);
+            color: #fff;
+            cursor: pointer;
+            transition: all 0.15s;
+            font-size: 0.9em;
+            text-align: center;
+        }
+
+        .key-btn:hover {
+            border-color: #00d4ff;
+            transform: translateY(-2px);
+        }
+
+        .key-btn:active {
+            transform: translateY(1px);
+            background: linear-gradient(145deg, #252540, #1a1a2e);
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.3);
+        }
+
+        .key-btn.wave-btn {
+            grid-column: 1 / -1;
+            background: linear-gradient(145deg, #2a1a3e, #3a2a4e);
+            border-color: #7b2cbf;
+        }
+
+        .key-btn.wave-btn:hover {
+            border-color: #a29bfe;
+        }
+
+        .key-btn .icon {
+            font-size: 1.5em;
+            margin-bottom: 5px;
+        }
+
+        .key-btn .label {
+            font-size: 0.85em;
+            color: #aaa;
+        }
+
+        .key-btn .hotkey {
+            font-size: 0.7em;
+            color: #666;
+            margin-top: 3px;
+        }
+
+        /* 频率显示 */
+        .freq-display {
+            background: #0a0a15;
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+            border: 1px solid #222;
+        }
+
+        .freq-label {
+            font-size: 0.8em;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .freq-value {
+            font-size: 1.8em;
+            font-weight: bold;
+            font-family: 'Consolas', monospace;
+            color: #00d4ff;
+            text-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
+        }
+
+        .freq-unit {
+            font-size: 0.5em;
+            color: #888;
+        }
+
+        .wave-indicator {
+            margin-top: 10px;
+            padding: 8px;
+            background: rgba(123, 44, 191, 0.2);
+            border-radius: 8px;
+            border: 1px solid #7b2cbf;
+        }
+
+        .wave-indicator .current {
+            font-size: 1.1em;
+            font-weight: bold;
+            color: #a29bfe;
+        }
+
+        /* 波形缩放控制 */
+        .zoom-controls {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .zoom-btn {
+            flex: 1;
+            padding: 8px;
+            border: 1px solid #333;
+            border-radius: 6px;
+            background: #1a1a2e;
+            color: #fff;
+            cursor: pointer;
+            font-size: 0.85em;
+            transition: all 0.2s;
+        }
+
+        .zoom-btn:hover {
+            background: #252540;
+            border-color: #00d4ff;
+        }
+
+        .zoom-btn.active {
+            background: rgba(0, 212, 255, 0.2);
+            border-color: #00d4ff;
+        }
+
+        /* 中间波形显示区 */
+        .waveform-container {
+            position: relative;
+        }
+
+        #waveformCanvas {
+            width: 100%;
+            height: 350px;
+            border-radius: 10px;
+            background: #0a0a15;
+            border: 1px solid #222;
+            cursor: crosshair;
+        }
+
+        .wave-overlay {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            display: flex;
+            gap: 5px;
+        }
+
+        .overlay-btn {
+            padding: 5px 10px;
+            border: 1px solid #333;
+            border-radius: 5px;
+            background: rgba(0,0,0,0.5);
+            color: #888;
+            font-size: 0.75em;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .overlay-btn:hover {
+            background: rgba(0, 212, 255, 0.2);
+            color: #fff;
+        }
+
+        .overlay-btn.active {
+            background: rgba(0, 212, 255, 0.3);
+            color: #00d4ff;
+            border-color: #00d4ff;
+        }
+
+        /* 波形信息 */
+        .wave-info {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .info-item {
+            background: rgba(0,0,0,0.3);
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .info-item .label {
+            font-size: 0.75em;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .info-item .value {
+            font-size: 1.1em;
+            font-weight: bold;
+            font-family: 'Consolas', monospace;
+        }
+
+        .info-item .value.cyan { color: #00d4ff; }
+        .info-item .value.green { color: #4ecdc4; }
+        .info-item .value.yellow { color: #ffc300; }
+        .info-item .value.purple { color: #a29bfe; }
+
+        /* 右侧面板 */
+        .right-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        /* 串口终端 */
+        .serial-terminal {
+            background: #0a0a15;
+            border-radius: 10px;
+            border: 1px solid #222;
+            overflow: hidden;
+        }
+
+        .terminal-header {
+            background: #1a1a2e;
+            padding: 8px 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #222;
+        }
+
+        .terminal-title {
+            font-size: 0.85em;
+            color: #00d4ff;
+        }
+
+        .terminal-status {
+            font-size: 0.75em;
+            color: #4ecdc4;
+        }
+
+        .terminal-status::before {
+            content: '●';
+            margin-right: 5px;
+        }
+
+        .terminal-body {
+            height: 150px;
+            overflow-y: auto;
+            padding: 10px;
+            font-family: 'Consolas', monospace;
+            font-size: 0.8em;
+            line-height: 1.6;
+        }
+
+        .terminal-body::-webkit-scrollbar {
+            width: 5px;
+        }
+
+        .terminal-body::-webkit-scrollbar-thumb {
+            background: #333;
+            border-radius: 3px;
+        }
+
+        .terminal-line {
+            margin-bottom: 3px;
+        }
+
+        .terminal-line.rx { color: #4ecdc4; }
+        .terminal-line.tx { color: #ffc300; }
+        .terminal-line.info { color: #666; }
+        .terminal-line.cmd { color: #a29bfe; }
+
+        .terminal-input {
+            display: flex;
+            gap: 8px;
+            padding: 10px;
+            background: #0f0f1a;
+            border-top: 1px solid #222;
+        }
+
+        .terminal-input input {
+            flex: 1;
+            background: #1a1a2e;
+            border: 1px solid #333;
+            border-radius: 5px;
+            padding: 8px 12px;
+            color: #fff;
+            font-family: 'Consolas', monospace;
+            font-size: 0.85em;
+        }
+
+        .terminal-input input:focus {
+            outline: none;
+            border-color: #00d4ff;
+        }
+
+        .terminal-input input::placeholder {
+            color: #555;
+        }
+
+        .terminal-input button {
+            padding: 8px 15px;
+            background: linear-gradient(135deg, #00d4ff, #7b2cbf);
+            border: none;
+            border-radius: 5px;
+            color: #fff;
+            cursor: pointer;
+            font-size: 0.85em;
+            transition: all 0.2s;
+        }
+
+        .terminal-input button:hover {
+            transform: scale(1.05);
+        }
+
+        /* 快捷指令 */
+        .quick-commands {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            padding: 10px;
+            background: #0f0f1a;
+            border-radius: 8px;
+        }
+
+        .cmd-btn {
+            padding: 5px 10px;
+            background: #1a1a2e;
+            border: 1px solid #333;
+            border-radius: 5px;
+            color: #aaa;
+            font-size: 0.75em;
+            font-family: 'Consolas', monospace;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .cmd-btn:hover {
+            background: rgba(0, 212, 255, 0.2);
+            color: #00d4ff;
+            border-color: #00d4ff;
+        }
+
+        /* DDS原理图 */
+        .dds-diagram {
+            display: flex;
+            align-items: center;
+            justify-content: space-around;
+            padding: 15px 10px;
+            background: #0a0a15;
+            border-radius: 10px;
+            border: 1px solid #222;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .dds-block {
+            text-align: center;
+            padding: 10px 12px;
+            border-radius: 8px;
+            min-width: 80px;
+        }
+
+        .dds-block.fcw { background: rgba(255, 107, 107, 0.15); border: 1px solid #ff6b6b; }
+        .dds-block.acc { background: rgba(78, 205, 196, 0.15); border: 1px solid #4ecdc4; }
+        .dds-block.lut { background: rgba(255, 195, 0, 0.15); border: 1px solid #ffc300; }
+        .dds-block.dac { background: rgba(0, 206, 209, 0.15); border: 1px solid #00ced1; }
+
+        .dds-block .label {
+            font-size: 0.7em;
+            color: #666;
+            margin-bottom: 3px;
+        }
+
+        .dds-block .value {
+            font-size: 0.85em;
+            font-weight: bold;
+            font-family: 'Consolas', monospace;
+        }
+
+        .dds-block.fcw .value { color: #ff6b6b; }
+        .dds-block.acc .value { color: #4ecdc4; }
+        .dds-block.lut .value { color: #ffc300; }
+        .dds-block.dac .value { color: #00ced1; }
+
+        .arrow { color: #444; font-size: 1.2em; }
+
+        /* 提示框 */
+        .tooltip {
+            position: fixed;
+            background: #1a1a2e;
+            border: 1px solid #00d4ff;
+            border-radius: 8px;
+            padding: 10px 15px;
+            font-size: 0.85em;
+            color: #fff;
+            z-index: 1000;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s;
+            max-width: 250px;
+        }
+
+        .tooltip.show {
+            opacity: 1;
+        }
+
+        /* 响应式 */
+        @media (max-width: 1200px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .left-panel, .right-panel {
+                flex-direction: row;
+                flex-wrap: wrap;
+            }
+
+            .left-panel > *, .right-panel > * {
+                flex: 1;
+                min-width: 280px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>DDS信号发生器交互仿真</h1>
+        <p class="subtitle">基于Zynq-7010 SoC | 参考原项目Key_Control.v逻辑</p>
+
+        <div class="main-grid">
+            <!-- 左侧控制面板 -->
+            <div class="left-panel">
+                <!-- 按键控制 -->
+                <div class="panel">
+                    <div class="panel-title">按键控制</div>
+                    <div class="keypad">
+                        <button class="key-btn" onclick="freqUp()" title="频率增加1kHz">
+                            <div class="icon">⬆</div>
+                            <div class="label">Freq+</div>
+                            <div class="hotkey">[W] 或 [↑]</div>
+                        </button>
+                        <button class="key-btn" onclick="freqDown()" title="频率减少1kHz">
+                            <div class="icon">⬇</div>
+                            <div class="label">Freq-</div>
+                            <div class="hotkey">[S] 或 [↓]</div>
+                        </button>
+                        <button class="key-btn wave-btn" onclick="switchWave()" title="切换波形: 正弦→方波→三角波">
+                            <div class="icon">🔄</div>
+                            <div class="label">切换波形</div>
+                            <div class="hotkey">[Space] 或 [Tab]</div>
+                        </button>
+                        <button class="key-btn" onclick="resetSystem()" title="系统复位">
+                            <div class="icon">⟲</div>
+                            <div class="label">复位</div>
+                            <div class="hotkey">[R]</div>
+                        </button>
+                        <button class="key-btn" onclick="togglePause()" title="暂停/继续">
+                            <div class="icon" id="pauseIcon">⏸</div>
+                            <div class="label" id="pauseLabel">暂停</div>
+                            <div class="hotkey">[Space]</div>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 频率显示 -->
+                <div class="panel">
+                    <div class="panel-title">频率信息</div>
+                    <div class="freq-display">
+                        <div class="freq-label">当前输出频率</div>
+                        <div class="freq-value">
+                            <span id="freqNumber">100.00</span>
+                            <span class="freq-unit" id="freqUnit">kHz</span>
+                        </div>
+                        <div class="wave-indicator">
+                            <div class="label" style="font-size: 0.8em; color: #888;">当前波形</div>
+                            <div class="current" id="waveName">正弦波 (SIN)</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 缩放控制 -->
+                <div class="panel">
+                    <div class="panel-title">波形缩放</div>
+                    <div class="zoom-controls">
+                        <button class="zoom-btn" onclick="setZoom(0.5)">0.5x</button>
+                        <button class="zoom-btn active" onclick="setZoom(1)">1x</button>
+                        <button class="zoom-btn" onclick="setZoom(2)">2x</button>
+                        <button class="zoom-btn" onclick="setZoom(5)">5x</button>
+                    </div>
+                    <div style="margin-top: 10px; font-size: 0.8em; color: #666;">
+                        提示: 使用鼠标滚轮可自由缩放
+                    </div>
+                </div>
+
+                <!-- FCW信息 -->
+                <div class="panel">
+                    <div class="panel-title">FCW参数</div>
+                    <div style="font-family: 'Consolas', monospace; font-size: 0.85em; line-height: 1.8;">
+                        <div><span style="color: #666;">FCW:</span> <span style="color: #ff6b6b;" id="fcwDecimal">10737418</span></div>
+                        <div><span style="color: #666;">HEX:</span> <span style="color: #4ecdc4;" id="fcwHex">0x00A3D70A</span></div>
+                        <div><span style="color: #666;">STEP:</span> <span style="color: #ffc300;">±107374</span> <span style="color: #666;">(≈1kHz)</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 中间波形显示 -->
+            <div class="waveform-container">
+                <div class="panel" style="padding: 10px;">
+                    <div class="panel-title">波形输出</div>
+                    <div style="position: relative;">
+                        <canvas id="waveformCanvas"></canvas>
+                        <div class="wave-overlay">
+                            <button class="overlay-btn" onclick="toggleGrid()" id="gridBtn">网格</button>
+                            <button class="overlay-btn" onclick="toggleTrigger()" id="triggerBtn">触发</button>
+                            <button class="overlay-btn" onclick="fitToView()">适应</button>
+                        </div>
+                    </div>
+
+                    <!-- 波形信息 -->
+                    <div class="wave-info">
+                        <div class="info-item">
+                            <div class="label">频率</div>
+                            <div class="value cyan" id="infoFreq">100.00 kHz</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="label">周期</div>
+                            <div class="value green" id="infoPeriod">10.00 μs</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="label">DAC值</div>
+                            <div class="value yellow" id="infoDac">128</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="label">相位</div>
+                            <div class="value purple" id="infoPhase">0°</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- DDS原理图 -->
+                <div class="panel" style="margin-top: 15px;">
+                    <div class="panel-title">DDS数据流</div>
+                    <div class="dds-diagram">
+                        <div class="dds-block fcw">
+                            <div class="label">FCW</div>
+                            <div class="value" id="ddsFcw">10737418</div>
+                        </div>
+                        <div class="arrow">→</div>
+                        <div class="dds-block acc">
+                            <div class="label">相位累加器</div>
+                            <div class="value" id="ddsAcc">0x0000</div>
+                        </div>
+                        <div class="arrow">→</div>
+                        <div class="dds-block lut">
+                            <div class="label">查找表[8bit]</div>
+                            <div class="value" id="ddsLut">128</div>
+                        </div>
+                        <div class="arrow">→</div>
+                        <div class="dds-block dac">
+                            <div class="label">DAC输出</div>
+                            <div class="value" id="ddsDac">128</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右侧串口终端 -->
+            <div class="right-panel">
+                <div class="panel" style="padding: 0; overflow: hidden;">
+                    <div class="serial-terminal">
+                        <div class="terminal-header">
+                            <div class="terminal-title">📡 UART 串口终端</div>
+                            <div class="terminal-status">已连接</div>
+                        </div>
+                        <div class="terminal-body" id="terminalBody">
+                            <div class="terminal-line info">[系统] DDS信号发生器串口终端已就绪</div>
+                            <div class="terminal-line info">[系统] 波特率: 9600bps, 8N1</div>
+                            <div class="terminal-line info">[系统] 指令格式: F + 6位频率值 (Hz)</div>
+                            <div class="terminal-line info">[系统] 示例: F001000 = 设置1kHz</div>
+                            <div class="terminal-line info">[系统] ─────────────────────────</div>
+                        </div>
+                        <div class="terminal-input">
+                            <input type="text" id="serialInput" placeholder="输入指令如: F001000"
+                                   maxlength="7" onkeypress="handleSerialKeypress(event)">
+                            <button onclick="sendSerialCommand()">发送</button>
+                        </div>
+                        <div class="quick-commands">
+                            <button class="cmd-btn" onclick="quickCmd('F001000')">F001000 (1kHz)</button>
+                            <button class="cmd-btn" onclick="quickCmd('F010000')">F010000 (10kHz)</button>
+                            <button class="cmd-btn" onclick="quickCmd('F100000')">F100000 (100kHz)</button>
+                            <button class="cmd-btn" onclick="quickCmd('F200000')">F200000 (200kHz)</button>
+                            <button class="cmd-btn" onclick="quickCmd('F500000')">F500000 (500kHz)</button>
+                            <button class="cmd-btn" onclick="quickCmd('F999999')">F999999 (最大)</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 串口协议说明 -->
+                <div class="panel">
+                    <div class="panel-title">UART协议</div>
+                    <div style="font-size: 0.8em; line-height: 1.8;">
+                        <div style="margin-bottom: 10px;">
+                            <span style="color: #666;">接收指令:</span><br>
+                            <code style="color: #4ecdc4;">'F' + 6位ASCII数字 + CR + LF</code>
+                        </div>
+                        <div style="margin-bottom: 10px;">
+                            <span style="color: #666;">发送回显:</span><br>
+                            <code style="color: #ffc300;">波形类型 + 6位BCD频率 + CR + LF</code>
+                        </div>
+                        <div>
+                            <span style="color: #666;">波形代码:</span><br>
+                            <code style="color: #a29bfe;">SIN / SQU / TRI</code>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 调试信息 -->
+                <div class="panel">
+                    <div class="panel-title">调试信息</div>
+                    <div style="font-family: 'Consolas', monospace; font-size: 0.75em; line-height: 1.8; color: #888;">
+                        <div>时钟: <span style="color: #00d4ff;">100 MHz</span></div>
+                        <div>分辨率: <span style="color: #4ecdc4;">0.0233 Hz</span></div>
+                        <div>累加器: <span style="color: #ffc300;" id="dbgAcc">32-bit</span></div>
+                        <div>查找表: <span style="color: #a29bfe;">256点</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 提示框 -->
+    <div class="tooltip" id="tooltip"></div>
+
+    <script>
+        // ==================== 仿真参数 ====================
+        const F_CLK = 100000000; // 100MHz
+        const N = 32;
+        const FCW_STEP = 107374; // 对应1kHz步进
+        const FCW_DEFAULT = 10737418; // 默认100kHz
+        const FCW_MIN = 10737;
+        const FCW_MAX = 4294967;
+
+        // 波形名称映射 (参考原项目代码)
+        const WAVE_NAMES = {
+            0: { cn: '正弦波', en: 'SIN', code: '00' },
+            1: { cn: '方波', en: 'SQU', code: '01' },
+            2: { cn: '三角波', en: 'TRI', code: '10' }
+        };
+
+        // ==================== 状态变量 ====================
+        let isRunning = true;
+        let showGrid = true;
+        let triggerMode = false;
+        let currentWaveType = 0; // 0=SIN, 1=SQU, 2=TRI
+        let fcw = FCW_DEFAULT;
+        let phaseAcc = 0;
+        let zoomLevel = 1;
+        let animationId = null;
+
+        // 正弦波查找表
+        const sinLut = new Array(256);
+        for (let i = 0; i < 256; i++) {
+            sinLut[i] = Math.round(128 + 127 * Math.sin(2 * Math.PI * i / 256));
+        }
+
+        // ==================== 核心函数 ====================
+
+        // 计算输出频率
+        function calcFreq(fcwVal) {
+            return (fcwVal * F_CLK) / Math.pow(2, N);
+        }
+
+        // 格式化频率显示
+        function formatFreq(freq) {
+            if (freq >= 1000000) return { value: (freq / 1000000).toFixed(2), unit: 'MHz' };
+            if (freq >= 1000) return { value: (freq / 1000).toFixed(2), unit: 'kHz' };
+            return { value: freq.toFixed(2), unit: 'Hz' };
+        }
+
+        // 格式化周期显示
+        function formatPeriod(freq) {
+            const period = 1 / freq;
+            if (period >= 0.001) return { value: (period * 1000).toFixed(2), unit: 'ms' };
+            if (period >= 0.000001) return { value: (period * 1000000).toFixed(2), unit: 'μs' };
+            return { value: (period * 1000000000).toFixed(2), unit: 'ns' };
+        }
+
+        // 获取波形值 (参考原项目DDS_Core.v逻辑)
+        function getWaveValue(phase, waveType) {
+            const index = (phase >>> 24) & 0xFF;
+
+            switch (waveType) {
+                case 0: // 正弦波 (SIN)
+                    return sinLut[index];
+                case 1: // 方波 (SQU) - 参考原代码
+                    return index > 127 ? 255 : 0;
+                case 2: // 三角波 (TRI) - 参考原代码
+                    return index <= 127 ? (index << 1) : (255 - ((index - 128) << 1));
+                default:
+                    return 128;
+            }
+        }
+
+        // ==================== 按键控制 ====================
+
+        // 频率增加 (参考Key_Control.v: key_in[0])
+        function freqUp() {
+            fcw = Math.min(fcw + FCW_STEP, FCW_MAX);
+            updateAllDisplays();
+            addTerminalLine('cmd', `[按键] Freq+ → FCW = ${fcw}`);
+        }
+
+        // 频率减少 (参考Key_Control.v: key_in[1])
+        function freqDown() {
+            fcw = Math.max(fcw - FCW_STEP, FCW_MIN);
+            updateAllDisplays();
+            addTerminalLine('cmd', `[按键] Freq- → FCW = ${fcw}`);
+        }
+
+        // 波形切换 (参考Key_Control.v: key_in[2], 循环切换 00→01→10→00)
+        function switchWave() {
+            currentWaveType = (currentWaveType + 1) % 3;
+            updateAllDisplays();
+            const wave = WAVE_NAMES[currentWaveType];
+            addTerminalLine('cmd', `[按键] 波形切换 → ${wave.cn} (${wave.en})`);
+        }
+
+        // 系统复位
+        function resetSystem() {
+            fcw = FCW_DEFAULT;
+            currentWaveType = 0;
+            phaseAcc = 0;
+            updateAllDisplays();
+            addTerminalLine('info', '[系统] 复位完成 - FCW=10737418, 波形=SIN');
+        }
+
+        // 暂停/继续
+        function togglePause() {
+            isRunning = !isRunning;
+            document.getElementById('pauseIcon').textContent = isRunning ? '⏸' : '▶';
+            document.getElementById('pauseLabel').textContent = isRunning ? '暂停' : '继续';
+        }
+
+        // ==================== 串口交互 ====================
+
+        // 发送串口指令 (参考原项目UART_Parse.v逻辑)
+        function sendSerialCommand() {
+            const input = document.getElementById('serialInput');
+            const cmd = input.value.trim().toUpperCase();
+
+            if (!cmd) return;
+
+            // 显示发送的数据
+            addTerminalLine('tx', `TX: ${cmd}`);
+
+            // 解析指令 (参考原项目: 'F' + 6位ASCII数字)
+            if (cmd.startsWith('F') && cmd.length === 7) {
+                const freqStr = cmd.substring(1);
+                const freq = parseInt(freqStr);
+
+                if (!isNaN(freq) && freq >= 0 && freq <= 999999) {
+                    // 计算FCW: FCW = freq * 2^32 / 100,000,000
+                    const newFcw = Math.round((freq * Math.pow(2, 32)) / F_CLK);
+
+                    if (newFcw >= FCW_MIN && newFcw <= FCW_MAX) {
+                        fcw = newFcw;
+                        updateAllDisplays();
+
+                        // 回显响应 (参考原项目HMI_UARTX.v)
+                        const waveCode = WAVE_NAMES[currentWaveType].en;
+                        const freqBcd = freq.toString().padStart(6, '0');
+                        addTerminalLine('rx', `RX: ${waveCode}${freqBcd}`);
+
+                        addTerminalLine('info', `[解析] 设置频率: ${freq} Hz, FCW = ${fcw}`);
+                    } else {
+                        addTerminalLine('info', '[错误] FCW超出范围');
+                    }
+                } else {
+                    addTerminalLine('info', '[错误] 频率值无效 (0-999999)');
+                }
+            } else {
+                addTerminalLine('info', '[错误] 指令格式错误 (需要: F + 6位数字)');
+            }
+
+            input.value = '';
+        }
+
+        // 快捷指令
+        function quickCmd(cmd) {
+            document.getElementById('serialInput').value = cmd;
+            sendSerialCommand();
+        }
+
+        // 处理回车
+        function handleSerialKeypress(e) {
+            if (e.key === 'Enter') sendSerialCommand();
+        }
+
+        // 添加终端行
+        function addTerminalLine(type, text) {
+            const body = document.getElementById('terminalBody');
+            const line = document.createElement('div');
+            line.className = `terminal-line ${type}`;
+            line.textContent = text;
+            body.appendChild(line);
+            body.scrollTop = body.scrollHeight;
+
+            // 限制行数
+            while (body.children.length > 100) {
+                body.removeChild(body.firstChild);
+            }
+        }
+
+        // ==================== 显示更新 ====================
+
+        // 更新所有显示
+        function updateAllDisplays() {
+            const freq = calcFreq(fcw);
+            const freqFmt = formatFreq(freq);
+            const periodFmt = formatPeriod(freq);
+            const wave = WAVE_NAMES[currentWaveType];
+
+            // 频率显示
+            document.getElementById('freqNumber').textContent = freqFmt.value;
+            document.getElementById('freqUnit').textContent = freqFmt.unit;
+            document.getElementById('waveName').textContent = `${wave.cn} (${wave.en})`;
+
+            // 波形信息
+            document.getElementById('infoFreq').textContent = `${freqFmt.value} ${freqFmt.unit}`;
+            document.getElementById('infoPeriod').textContent = `${periodFmt.value} ${periodFmt.unit}`;
+
+            // FCW显示
+            document.getElementById('fcwDecimal').textContent = fcw;
+            document.getElementById('fcwHex').textContent = '0x' + (fcw >>> 0).toString(16).toUpperCase().padStart(8, '0');
+
+            // DDS图
+            document.getElementById('ddsFcw').textContent = fcw;
+        }
+
+        // ==================== 波形绘制 ====================
+
+        function drawWaveform() {
+            const canvas = document.getElementById('waveformCanvas');
+            const ctx = canvas.getContext('2d');
+
+            // 设置canvas大小
+            const rect = canvas.getBoundingClientRect();
+            canvas.width = rect.width * 2;
+            canvas.height = rect.height * 2;
+            ctx.scale(2, 2);
+
+            const width = rect.width;
+            const height = rect.height;
+
+            // 清除画布
+            ctx.fillStyle = '#0a0a15';
+            ctx.fillRect(0, 0, width, height);
+
+            // 绘制网格
+            if (showGrid) {
+                ctx.strokeStyle = '#1a1a2e';
+                ctx.lineWidth = 1;
+
+                // 水平线
+                for (let y = 0; y <= height; y += height / 10) {
+                    ctx.beginPath();
+                    ctx.moveTo(0, y);
+                    ctx.lineTo(width, y);
+                    ctx.stroke();
+                }
+
+                // 垂直线
+                for (let x = 0; x <= width; x += width / 20) {
+                    ctx.beginPath();
+                    ctx.moveTo(x, 0);
+                    ctx.lineTo(x, height);
+                    ctx.stroke();
+                }
+
+                // 中心线
+                ctx.strokeStyle = '#333';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(0, height / 2);
+                ctx.lineTo(width, height / 2);
+                ctx.stroke();
+
+                // 振幅标记
+                ctx.fillStyle = '#444';
+                ctx.font = '10px Consolas';
+                ctx.fillText('255', 5, 15);
+                ctx.fillText('128', 5, height / 2 + 4);
+                ctx.fillText('0', 5, height - 5);
+            }
+
+            // 计算显示参数
+            const cyclesToShow = zoomLevel;
+            const samplesPerCycle = F_CLK / calcFreq(fcw);
+            const totalSamples = Math.min(samplesPerCycle * cyclesToShow, width);
+
+            // 绘制波形
+            const waveColor = getWaveColor();
+            ctx.strokeStyle = waveColor;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+
+            let firstPoint = true;
+            for (let x = 0; x < width; x++) {
+                // 计算相位
+                const sampleOffset = (x / width) * totalSamples;
+                const phase = (phaseAcc + Math.floor(sampleOffset * fcw)) % Math.pow(2, 32);
+
+                // 获取波形值
+                const value = getWaveValue(phase, currentWaveType);
+                const y = height - (value / 255) * height;
+
+                if (firstPoint) {
+                    ctx.moveTo(x, y);
+                    firstPoint = false;
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            }
+            ctx.stroke();
+
+            // 发光效果
+            ctx.shadowBlur = 8;
+            ctx.shadowColor = waveColor;
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+
+            // 更新调试信息
+            const currentDac = getWaveValue(phaseAcc, currentWaveType);
+            const currentPhase = Math.floor((phaseAcc / Math.pow(2, 32)) * 360);
+            document.getElementById('infoDac').textContent = currentDac;
+            document.getElementById('infoPhase').textContent = `${currentPhase}°`;
+
+            // 更新DDS图
+            document.getElementById('ddsAcc').textContent = '0x' + ((phaseAcc >>> 16) & 0xFFFF).toString(16).toUpperCase().padStart(4, '0');
+            document.getElementById('ddsLut').textContent = currentDac;
+            document.getElementById('ddsDac').textContent = currentDac;
+        }
+
+        function getWaveColor() {
+            switch (currentWaveType) {
+                case 0: return '#00d4ff';
+                case 1: return '#4ecdc4';
+                case 2: return '#ffc300';
+                default: return '#00d4ff';
+            }
+        }
+
+        // ==================== 缩放控制 ====================
+
+        function setZoom(level) {
+            zoomLevel = level;
+            document.querySelectorAll('.zoom-btn').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.textContent === level + 'x') btn.classList.add('active');
+            });
+        }
+
+        function fitToView() {
+            zoomLevel = 1;
+            document.querySelectorAll('.zoom-btn').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.textContent === '1x') btn.classList.add('active');
+            });
+        }
+
+        // 鼠标滚轮缩放
+        document.addEventListener('DOMContentLoaded', function() {
+            const canvas = document.getElementById('waveformCanvas');
+            canvas.addEventListener('wheel', function(e) {
+                e.preventDefault();
+                if (e.deltaY < 0) {
+                    zoomLevel = Math.min(zoomLevel * 1.2, 10);
+                } else {
+                    zoomLevel = Math.max(zoomLevel / 1.2, 0.2);
+                }
+                // 更新按钮状态
+                document.querySelectorAll('.zoom-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+            });
+        });
+
+        // ==================== 显示选项 ====================
+
+        function toggleGrid() {
+            showGrid = !showGrid;
+            document.getElementById('gridBtn').classList.toggle('active', showGrid);
+        }
+
+        function toggleTrigger() {
+            triggerMode = !triggerMode;
+            document.getElementById('triggerBtn').classList.toggle('active', triggerMode);
+        }
+
+        // ==================== 键盘快捷键 ====================
+
+        document.addEventListener('keydown', function(e) {
+            // 如果在输入框中，不处理快捷键
+            if (e.target.tagName === 'INPUT') return;
+
+            switch (e.key) {
+                case 'w':
+                case 'W':
+                case 'ArrowUp':
+                    e.preventDefault();
+                    freqUp();
+                    break;
+                case 's':
+                case 'S':
+                case 'ArrowDown':
+                    e.preventDefault();
+                    freqDown();
+                    break;
+                case ' ':
+                case 'Tab':
+                    e.preventDefault();
+                    switchWave();
+                    break;
+                case 'r':
+                case 'R':
+                    e.preventDefault();
+                    resetSystem();
+                    break;
+                case 'Escape':
+                    togglePause();
+                    break;
+            }
+        });
+
+        // ==================== 动画循环 ====================
+
+        function animate() {
+            if (isRunning) {
+                phaseAcc = (phaseAcc + fcw) % Math.pow(2, 32);
+            }
+            drawWaveform();
+            animationId = requestAnimationFrame(animate);
+        }
+
+        // ==================== 初始化 ====================
+
+        window.onload = function() {
+            // 初始显示
+            document.getElementById('gridBtn').classList.add('active');
+            updateAllDisplays();
+            animate();
+
+            // 添加说明
+            addTerminalLine('info', '[提示] 键盘快捷键: W/↑=频率+, S/↓=频率-, 空格=切换波形, R=复位');
+        };
+
+        window.onresize = function() {
+            drawWaveform();
+        };
+    </script>
+</body>
+</html>
