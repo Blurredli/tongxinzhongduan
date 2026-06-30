@@ -1,0 +1,1316 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DDS信号发生器项目汇报</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --secondary: #7c3aed;
+            --accent: #06b6d4;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --dark: #1e293b;
+            --darker: #0f172a;
+            --light: #f1f5f9;
+            --text: #334155;
+            --text-light: #64748b;
+        }
+
+        body {
+            font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--darker);
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        /* 幻灯片容器 */
+        .slides-container {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+        }
+
+        .slide {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 60px 80px;
+            opacity: 0;
+            transform: translateX(100px);
+            transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            pointer-events: none;
+        }
+
+        .slide.active {
+            opacity: 1;
+            transform: translateX(0);
+            pointer-events: all;
+        }
+
+        .slide.prev {
+            opacity: 0;
+            transform: translateX(-100px);
+        }
+
+        /* 背景样式 */
+        .bg-gradient {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .bg-dark {
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+        }
+
+        .bg-blue {
+            background: linear-gradient(135deg, #1e3a5f 0%, #0c1929 100%);
+        }
+
+        .bg-purple {
+            background: linear-gradient(135deg, #4c1d95 0%, #1e1b4b 100%);
+        }
+
+        .bg-teal {
+            background: linear-gradient(135deg, #134e4a 0%, #042f2e 100%);
+        }
+
+        .bg-green {
+            background: linear-gradient(135deg, #065f46 0%, #022c22 100%);
+        }
+
+        /* 标题样式 */
+        .slide-title {
+            font-size: 3em;
+            font-weight: 700;
+            color: white;
+            text-align: center;
+            margin-bottom: 40px;
+            text-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            animation: fadeInUp 0.8s ease-out;
+        }
+
+        .slide-title .highlight {
+            background: linear-gradient(90deg, #06b6d4, #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .slide-subtitle {
+            font-size: 1.4em;
+            color: rgba(255,255,255,0.8);
+            text-align: center;
+            margin-bottom: 30px;
+            animation: fadeInUp 0.8s ease-out 0.2s both;
+        }
+
+        /* 内容卡片 */
+        .content-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 30px;
+            width: 100%;
+            max-width: 1200px;
+            animation: fadeInUp 0.8s ease-out 0.4s both;
+        }
+
+        .content-grid.three-col {
+            grid-template-columns: repeat(3, 1fr);
+        }
+
+        .content-grid.four-col {
+            grid-template-columns: repeat(4, 1fr);
+        }
+
+        .card {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            border: 1px solid rgba(255,255,255,0.2);
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            background: rgba(255,255,255,0.15);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+        }
+
+        .card-icon {
+            width: 70px;
+            height: 70px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2em;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+        }
+
+        .card-icon.teal {
+            background: linear-gradient(135deg, #06b6d4, #0891b2);
+        }
+
+        .card-icon.green {
+            background: linear-gradient(135deg, #10b981, #059669);
+        }
+
+        .card-icon.orange {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+        }
+
+        .card-icon.purple {
+            background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+        }
+
+        .card-icon.pink {
+            background: linear-gradient(135deg, #ec4899, #db2777);
+        }
+
+        .card h3 {
+            font-size: 1.3em;
+            color: white;
+            margin-bottom: 12px;
+        }
+
+        .card p {
+            color: rgba(255,255,255,0.7);
+            line-height: 1.7;
+            font-size: 0.95em;
+        }
+
+        /* 列表样式 */
+        .feature-list {
+            list-style: none;
+            width: 100%;
+            max-width: 1000px;
+        }
+
+        .feature-list li {
+            display: flex;
+            align-items: center;
+            padding: 20px 30px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+            margin-bottom: 15px;
+            border-left: 4px solid var(--accent);
+            transition: all 0.3s ease;
+            animation: fadeInLeft 0.6s ease-out both;
+        }
+
+        .feature-list li:nth-child(1) { animation-delay: 0.2s; }
+        .feature-list li:nth-child(2) { animation-delay: 0.3s; }
+        .feature-list li:nth-child(3) { animation-delay: 0.4s; }
+        .feature-list li:nth-child(4) { animation-delay: 0.5s; }
+        .feature-list li:nth-child(5) { animation-delay: 0.6s; }
+        .feature-list li:nth-child(6) { animation-delay: 0.7s; }
+
+        .feature-list li:hover {
+            background: rgba(255,255,255,0.1);
+            transform: translateX(10px);
+        }
+
+        .feature-list .icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5em;
+            margin-right: 20px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+        }
+
+        .feature-list .text h4 {
+            color: white;
+            font-size: 1.2em;
+            margin-bottom: 5px;
+        }
+
+        .feature-list .text p {
+            color: rgba(255,255,255,0.6);
+            font-size: 0.9em;
+        }
+
+        /* 流程图 */
+        .flow-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+            width: 100%;
+            max-width: 1200px;
+            animation: fadeInUp 0.8s ease-out 0.4s both;
+        }
+
+        .flow-box {
+            background: rgba(255,255,255,0.1);
+            border-radius: 16px;
+            padding: 25px 35px;
+            text-align: center;
+            border: 2px solid rgba(255,255,255,0.2);
+            min-width: 150px;
+            transition: all 0.3s ease;
+        }
+
+        .flow-box:hover {
+            transform: scale(1.05);
+            border-color: var(--accent);
+            box-shadow: 0 10px 30px rgba(6, 182, 212, 0.3);
+        }
+
+        .flow-box .icon {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+
+        .flow-box .label {
+            color: white;
+            font-weight: 500;
+        }
+
+        .flow-box .sublabel {
+            color: rgba(255,255,255,0.5);
+            font-size: 0.85em;
+            margin-top: 5px;
+        }
+
+        .flow-arrow {
+            font-size: 2em;
+            color: var(--accent);
+        }
+
+        /* 公式框 */
+        .formula-box {
+            background: rgba(0,0,0,0.3);
+            border: 2px solid var(--accent);
+            border-radius: 16px;
+            padding: 40px 60px;
+            text-align: center;
+            margin: 30px 0;
+            animation: fadeInUp 0.8s ease-out 0.3s both;
+        }
+
+        .formula {
+            font-size: 2em;
+            font-family: 'Times New Roman', serif;
+            color: white;
+            letter-spacing: 2px;
+        }
+
+        .formula .var {
+            color: var(--accent);
+            font-style: italic;
+        }
+
+        .formula-note {
+            color: rgba(255,255,255,0.6);
+            margin-top: 15px;
+            font-size: 0.95em;
+        }
+
+        /* 代码块 */
+        .code-block {
+            background: linear-gradient(145deg, #1a1f35, #0d1525);
+            border-radius: 16px;
+            padding: 30px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 0.95em;
+            line-height: 1.9;
+            overflow-x: auto;
+            border: 1px solid rgba(100, 150, 255, 0.2);
+            box-shadow: inset 0 2px 10px rgba(0,0,0,0.3), 0 4px 20px rgba(0,0,0,0.2);
+            animation: fadeInUp 0.8s ease-out 0.4s both;
+            color: #e2e8f0;
+        }
+
+        .code-block .keyword { color: #f472b6; font-weight: bold; }
+        .code-block .type { color: #67e8f9; }
+        .code-block .number { color: #a5f3fc; background: rgba(103, 232, 249, 0.1); padding: 2px 6px; border-radius: 4px; }
+        .code-block .comment { color: #94a3b8; font-style: italic; }
+        .code-block .signal { color: #fcd34d; }
+
+        /* 表格 */
+        .styled-table {
+            width: 100%;
+            max-width: 1000px;
+            border-collapse: collapse;
+            border-radius: 12px;
+            overflow: hidden;
+            animation: fadeInUp 0.8s ease-out 0.4s both;
+        }
+
+        .styled-table thead {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+        }
+
+        .styled-table th {
+            padding: 18px 25px;
+            text-align: left;
+            color: white;
+            font-weight: 500;
+        }
+
+        .styled-table td {
+            padding: 15px 25px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            color: rgba(255,255,255,0.8);
+        }
+
+        .styled-table tbody tr {
+            background: rgba(255,255,255,0.05);
+            transition: all 0.3s ease;
+        }
+
+        .styled-table tbody tr:hover {
+            background: rgba(255,255,255,0.1);
+        }
+
+        .styled-table .status {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 500;
+        }
+
+        .styled-table .status.pass {
+            background: rgba(16, 185, 129, 0.2);
+            color: #34d399;
+        }
+
+        /* 统计卡片 */
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 25px;
+            width: 100%;
+            max-width: 1100px;
+            animation: fadeInUp 0.8s ease-out 0.4s both;
+        }
+
+        .stat-card {
+            background: rgba(255,255,255,0.1);
+            border-radius: 16px;
+            padding: 30px;
+            text-align: center;
+            border: 1px solid rgba(255,255,255,0.1);
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            background: rgba(255,255,255,0.15);
+        }
+
+        .stat-card .value {
+            font-size: 2.5em;
+            font-weight: 700;
+            background: linear-gradient(90deg, #06b6d4, #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .stat-card .label {
+            color: rgba(255,255,255,0.7);
+            margin-top: 10px;
+            font-size: 0.95em;
+        }
+
+        /* 导航 */
+        .nav-controls {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 15px;
+            z-index: 100;
+        }
+
+        .nav-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: none;
+            background: rgba(255,255,255,0.2);
+            color: white;
+            font-size: 1.2em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .nav-btn:hover {
+            background: rgba(255,255,255,0.3);
+            transform: scale(1.1);
+        }
+
+        .page-indicator {
+            position: fixed;
+            bottom: 30px;
+            right: 40px;
+            color: rgba(255,255,255,0.6);
+            font-size: 0.9em;
+            z-index: 100;
+        }
+
+        .progress-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #06b6d4, #8b5cf6);
+            transition: width 0.3s ease;
+            z-index: 100;
+        }
+
+        /* 动画 */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInLeft {
+            from {
+                opacity: 0;
+                transform: translateX(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        /* 封面特殊样式 */
+        .cover-content {
+            text-align: center;
+        }
+
+        .cover-logo {
+            width: 120px;
+            height: 120px;
+            background: linear-gradient(135deg, #06b6d4, #8b5cf6);
+            border-radius: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3em;
+            margin: 0 auto 40px;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        .cover-title {
+            font-size: 3.5em;
+            font-weight: 700;
+            color: white;
+            margin-bottom: 20px;
+            line-height: 1.3;
+        }
+
+        .cover-subtitle {
+            font-size: 1.5em;
+            color: rgba(255,255,255,0.7);
+            margin-bottom: 40px;
+        }
+
+        .cover-info {
+            display: flex;
+            gap: 40px;
+            justify-content: center;
+            color: rgba(255,255,255,0.6);
+            font-size: 1.1em;
+        }
+
+        .cover-info span {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* 双栏布局 */
+        .two-column {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 50px;
+            width: 100%;
+            max-width: 1200px;
+            align-items: center;
+        }
+
+        .column-title {
+            font-size: 1.8em;
+            color: white;
+            margin-bottom: 25px;
+        }
+
+        .column-text {
+            color: rgba(255,255,255,0.7);
+            line-height: 1.8;
+            font-size: 1.05em;
+        }
+
+        /* 对比框 */
+        .comparison-box {
+            background: rgba(255,255,255,0.05);
+            border-radius: 16px;
+            padding: 25px;
+            margin-bottom: 20px;
+            border-left: 4px solid;
+        }
+
+        .comparison-box.good {
+            border-color: var(--success);
+        }
+
+        .comparison-box.bad {
+            border-color: var(--danger);
+        }
+
+        .comparison-box h4 {
+            color: white;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .comparison-box p {
+            color: rgba(255,255,255,0.6);
+            font-size: 0.95em;
+        }
+
+        /* 时间线 */
+        .timeline {
+            position: relative;
+            padding-left: 40px;
+            width: 100%;
+            max-width: 800px;
+        }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 15px;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background: linear-gradient(180deg, var(--accent), var(--secondary));
+        }
+
+        .timeline-item {
+            position: relative;
+            margin-bottom: 30px;
+            animation: fadeInLeft 0.6s ease-out both;
+        }
+
+        .timeline-item:nth-child(1) { animation-delay: 0.2s; }
+        .timeline-item:nth-child(2) { animation-delay: 0.3s; }
+        .timeline-item:nth-child(3) { animation-delay: 0.4s; }
+        .timeline-item:nth-child(4) { animation-delay: 0.5s; }
+        .timeline-item:nth-child(5) { animation-delay: 0.6s; }
+
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -33px;
+            top: 5px;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--accent);
+            border: 3px solid var(--darker);
+        }
+
+        .timeline-item h4 {
+            color: white;
+            font-size: 1.2em;
+            margin-bottom: 8px;
+        }
+
+        .timeline-item p {
+            color: rgba(255,255,255,0.6);
+        }
+
+        /* 致谢页 */
+        .thanks-content {
+            text-align: center;
+        }
+
+        .thanks-icon {
+            font-size: 5em;
+            margin-bottom: 30px;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        .thanks-text {
+            font-size: 3em;
+            font-weight: 700;
+            color: white;
+            margin-bottom: 20px;
+        }
+
+        .thanks-subtext {
+            font-size: 1.3em;
+            color: rgba(255,255,255,0.7);
+            margin-bottom: 40px;
+        }
+
+        .contact-info {
+            display: flex;
+            gap: 30px;
+            justify-content: center;
+            color: rgba(255,255,255,0.6);
+        }
+
+        .contact-info span {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="progress-bar" id="progressBar"></div>
+
+    <div class="slides-container" id="slidesContainer">
+        <!-- 第1页: 封面 -->
+        <div class="slide bg-gradient active" data-slide="1">
+            <div class="cover-content">
+                <div class="cover-logo">📡</div>
+                <h1 class="cover-title">
+                    基于Zynq-7010 SoC的<br>
+                    <span class="highlight">DDS信号发生器</span>设计
+                </h1>
+                <p class="cover-subtitle">嵌入式系统综合设计A · 结题汇报</p>
+                <div class="cover-info">
+                    <span>👥 彭云帆 · 向飞帆</span>
+                    <span>📚 通信233班</span>
+                    <span>👨‍🏫 指导教师：文斌</span>
+                    <span>📅 2026年6月</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 第2页: 目录 -->
+        <div class="slide bg-dark" data-slide="2">
+            <h1 class="slide-title">📋 汇报提纲</h1>
+            <div class="content-grid">
+                <div class="card">
+                    <div class="card-icon">🎯</div>
+                    <h3>01 项目背景与需求</h3>
+                    <p>了解DDS技术背景和项目设计目标</p>
+                </div>
+                <div class="card">
+                    <div class="card-icon teal">⚙️</div>
+                    <h3>02 实现方案选择</h3>
+                    <p>对比不同方案，选择最优实现路径</p>
+                </div>
+                <div class="card">
+                    <div class="card-icon green">🔨</div>
+                    <h3>03 详细设计</h3>
+                    <p>系统架构、核心算法、模块实现</p>
+                </div>
+                <div class="card">
+                    <div class="card-icon orange">✅</div>
+                    <h3>04 测试与总结</h3>
+                    <p>功能验证、性能测试、经验总结</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 第3页: 项目背景 -->
+        <div class="slide bg-blue" data-slide="3">
+            <h1 class="slide-title">🎯 项目背景</h1>
+            <div class="two-column">
+                <div>
+                    <h2 class="column-title">为什么选择DDS？</h2>
+                    <p class="column-text">
+                        信号发生器是电子测试测量领域最基础的仪器之一，广泛应用于通信系统、电子测试、教学实验等领域。
+                    </p>
+                    <br>
+                    <p class="column-text">
+                        传统模拟信号发生器存在频率稳定性差、调节精度低、波形种类有限等缺点。
+                    </p>
+                </div>
+                <div>
+                    <div class="comparison-box bad">
+                        <h4>❌ 传统模拟方案</h4>
+                        <p>频率稳定性差、精度低、波形单一</p>
+                    </div>
+                    <div class="comparison-box good">
+                        <h4>✅ DDS数字方案</h4>
+                        <p>高分辨率、快切换、相位连续、灵活可调</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 第4页: 设计目标 -->
+        <div class="slide bg-purple" data-slide="4">
+            <h1 class="slide-title">🎯 设计目标</h1>
+            <ul class="feature-list">
+                <li>
+                    <div class="icon">🔧</div>
+                    <div class="text">
+                        <h4>基于Zynq-7010 SoC平台</h4>
+                        <p>ARM+FPGA异构架构，充分发挥SoC优势</p>
+                    </div>
+                </li>
+                <li>
+                    <div class="icon">📊</div>
+                    <div class="text">
+                        <h4>支持三种波形输出</h4>
+                        <p>正弦波、方波、三角波，满足不同应用需求</p>
+                    </div>
+                </li>
+                <li>
+                    <div class="icon">⚡</div>
+                    <div class="text">
+                        <h4>32位相位累加器</h4>
+                        <p>频率分辨率0.0233Hz，远优于0.1Hz要求</p>
+                    </div>
+                </li>
+                <li>
+                    <div class="icon">🎮</div>
+                    <div class="text">
+                        <h4>双重控制方式</h4>
+                        <p>本地按键控制 + 远程UART串口控制</p>
+                    </div>
+                </li>
+                <li>
+                    <div class="icon">📈</div>
+                    <div class="text">
+                        <h4>8位DAC输出</h4>
+                        <p>0-255幅值范围，支持模拟信号输出</p>
+                    </div>
+                </li>
+            </ul>
+        </div>
+
+        <!-- 第5页: 方案选择 -->
+        <div class="slide bg-teal" data-slide="5">
+            <h1 class="slide-title">⚙️ 实现方案选择</h1>
+            <div class="content-grid three-col">
+                <div class="card">
+                    <div class="card-icon">💻</div>
+                    <h3>平台选择</h3>
+                    <p><strong>Zynq-7010</strong><br>性价比高，ARM+FPGA异构架构</p>
+                </div>
+                <div class="card">
+                    <div class="card-icon teal">🎵</div>
+                    <h3>波形生成</h3>
+                    <p><strong>查找表(LUT)</strong><br>256点ROM，实现简单，速度快</p>
+                </div>
+                <div class="card">
+                    <div class="card-icon green">🎮</div>
+                    <h3>控制方式</h3>
+                    <p><strong>按键+串口</strong><br>本地实时控制，远程精确设置</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 第6页: 系统架构 -->
+        <div class="slide bg-dark" data-slide="6">
+            <h1 class="slide-title">🏗️ 系统架构</h1>
+            <div class="flow-container">
+                <div class="flow-box">
+                    <div class="icon">🎮</div>
+                    <div class="label">按键输入</div>
+                    <div class="sublabel">key[2:0]</div>
+                </div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-box">
+                    <div class="icon">🔧</div>
+                    <div class="label">按键控制</div>
+                    <div class="sublabel">消抖+FCW</div>
+                </div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-box">
+                    <div class="icon">🔀</div>
+                    <div class="label">FCW选择</div>
+                    <div class="sublabel">按键/UART</div>
+                </div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-box">
+                    <div class="icon">📡</div>
+                    <div class="label">DDS核心</div>
+                    <div class="sublabel">累加+查表</div>
+                </div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-box">
+                    <div class="icon">🔊</div>
+                    <div class="label">DAC输出</div>
+                    <div class="sublabel">8-bit</div>
+                </div>
+            </div>
+            <div style="margin-top: 50px;">
+                <div class="flow-container">
+                    <div class="flow-box">
+                        <div class="icon">📡</div>
+                        <div class="label">UART接收</div>
+                        <div class="sublabel">9600bps</div>
+                    </div>
+                    <div class="flow-arrow">→</div>
+                    <div class="flow-box">
+                        <div class="icon">📝</div>
+                        <div class="label">指令解析</div>
+                        <div class="sublabel">F+频率值</div>
+                    </div>
+                    <div class="flow-arrow">→</div>
+                    <div class="flow-box" style="border-color: var(--accent);">
+                        <div class="icon">📊</div>
+                        <div class="label">频率控制字</div>
+                        <div class="sublabel">32-bit FCW</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 第7页: DDS原理 -->
+        <div class="slide bg-blue" data-slide="7">
+            <h1 class="slide-title">📚 DDS核心原理</h1>
+            <div class="formula-box">
+                <div class="formula">
+                    <span class="var">f</span><sub>out</sub> = (<span class="var">FCW</span> × <span class="var">f</span><sub>clk</sub>) / 2<sup><span class="var">N</span></sup>
+                </div>
+                <p class="formula-note">
+                    f<sub>out</sub> = 输出频率 | FCW = 频率控制字 | f<sub>clk</sub> = 系统时钟(100MHz) | N = 累加器位宽(32)
+                </p>
+            </div>
+            <div class="stats-row">
+                <div class="stat-card">
+                    <div class="value">0.0233 Hz</div>
+                    <div class="label">频率分辨率</div>
+                </div>
+                <div class="stat-card">
+                    <div class="value">100 MHz</div>
+                    <div class="label">系统时钟</div>
+                </div>
+                <div class="stat-card">
+                    <div class="value">32 bit</div>
+                    <div class="label">相位累加器</div>
+                </div>
+                <div class="stat-card">
+                    <div class="value">256</div>
+                    <div class="label">查找表点数</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 第8页: 相位累加器 -->
+        <div class="slide bg-purple" data-slide="8">
+            <h1 class="slide-title">🔄 相位累加器</h1>
+            <div class="two-column">
+                <div>
+                    <h2 class="column-title">工作原理</h2>
+                    <p class="column-text">
+                        32位寄存器，每个时钟周期累加FCW值。当累加值超过2³²时自然溢出，形成周期性相位变化。
+                    </p>
+                    <br>
+                    <p class="column-text">
+                        高8位[31:24]作为波形查找表地址，实现相位到幅值的映射。
+                    </p>
+                </div>
+                <div class="code-block">
+                    <span class="comment">// 相位累加器 Verilog 实现</span><br>
+                    <span class="keyword">always</span> @(posedge clk <span class="keyword">or</span> negedge rst_n) <span class="keyword">begin</span><br>
+                    &nbsp;&nbsp;<span class="keyword">if</span>(!rst_n)<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;phase_acc <= <span class="number">32'd0</span>;<br>
+                    &nbsp;&nbsp;<span class="keyword">else</span><br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;phase_acc <= phase_acc + fcw;<br>
+                    <span class="keyword">end</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 第9页: 波形查找表 -->
+        <div class="slide bg-teal" data-slide="9">
+            <h1 class="slide-title">📊 波形查找表</h1>
+            <div class="content-grid three-col">
+                <div class="card">
+                    <div class="card-icon">🌊</div>
+                    <h3>正弦波</h3>
+                    <p>256点查找表<br>128 + 127×sin(2πi/256)<br>输出：0~255</p>
+                </div>
+                <div class="card">
+                    <div class="card-icon teal">⬜</div>
+                    <h3>方波</h3>
+                    <p>相位最高位判断<br>bit[31]=0→255<br>bit[31]=1→0</p>
+                </div>
+                <div class="card">
+                    <div class="card-icon green">📐</div>
+                    <h3>三角波</h3>
+                    <p>线性递增/递减<br>0~127: 0→255<br>128~255: 255→0</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 第10页: 按键控制 -->
+        <div class="slide bg-green" data-slide="10">
+            <h1 class="slide-title">🎮 按键控制模块</h1>
+            <div class="two-column">
+                <div>
+                    <h2 class="column-title">功能特性</h2>
+                    <ul class="feature-list" style="animation: none;">
+                        <li style="animation-delay: 0s;">
+                            <div class="icon">⬆️</div>
+                            <div class="text">
+                                <h4>Freq+ (key[0])</h4>
+                                <p>频率增加1kHz</p>
+                            </div>
+                        </li>
+                        <li style="animation-delay: 0.1s;">
+                            <div class="icon">⬇️</div>
+                            <div class="text">
+                                <h4>Freq- (key[1])</h4>
+                                <p>频率减少1kHz</p>
+                            </div>
+                        </li>
+                        <li style="animation-delay: 0.2s;">
+                            <div class="icon">🔄</div>
+                            <div class="text">
+                                <h4>Wave (key[2])</h4>
+                                <p>波形切换：SIN→SQU→TRI</p>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+                <div>
+                    <h2 class="column-title">消抖原理</h2>
+                    <p class="column-text">
+                        采用延时消抖方式，消抖时间10ms（1,000,000个时钟周期@100MHz）。
+                    </p>
+                    <br>
+                    <p class="column-text">
+                        当按键状态稳定保持10ms以上才确认为有效按键，避免机械抖动造成的误触发。
+                    </p>
+                    <br>
+                    <div class="code-block" style="font-size: 0.85em;">
+                        <span class="keyword">parameter</span> FCW_STEP = <span class="number">32'd107374</span>;<br>
+                        <span class="comment">// 约对应1kHz频率步进</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 第11页: UART通信 -->
+        <div class="slide bg-dark" data-slide="11">
+            <h1 class="slide-title">📡 UART通信模块</h1>
+            <div class="two-column">
+                <div>
+                    <h2 class="column-title">接收指令格式</h2>
+                    <div class="code-block">
+                        <span class="comment">// 格式: 'F' + 6位ASCII数字</span><br>
+                        <span class="signal">F</span><span class="number">001000</span> → <span class="comment">1 kHz</span><br>
+                        <span class="signal">F</span><span class="number">010000</span> → <span class="comment">10 kHz</span><br>
+                        <span class="signal">F</span><span class="number">100000</span> → <span class="comment">100 kHz</span><br>
+                        <span class="signal">F</span><span class="number">200000</span> → <span class="comment">200 kHz</span><br>
+                        <span class="signal">F</span><span class="number">999999</span> → <span class="comment">999.999 kHz</span>
+                    </div>
+                </div>
+                <div>
+                    <h2 class="column-title">发送回显格式</h2>
+                    <div class="code-block">
+                        <span class="comment">// 格式: 波形 + 频率BCD</span><br>
+                        <span class="signal">SIN</span><span class="number">000100</span> → <span class="comment">正弦波 1kHz</span><br>
+                        <span class="signal">SQU</span><span class="number">000100</span> → <span class="comment">方波 1kHz</span><br>
+                        <span class="signal">TRI</span><span class="number">000100</span> → <span class="comment">三角波 1kHz</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 第12页: 测试结果 -->
+        <div class="slide bg-green" data-slide="12">
+            <h1 class="slide-title">✅ 测试结果</h1>
+            <table class="styled-table">
+                <thead>
+                    <tr>
+                        <th>测试用例</th>
+                        <th>测试内容</th>
+                        <th>验证点</th>
+                        <th>状态</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>TEST1</td>
+                        <td>默认正弦波</td>
+                        <td>phase_acc递增，输出128±127</td>
+                        <td><span class="status pass">✓ 通过</span></td>
+                    </tr>
+                    <tr>
+                        <td>TEST2</td>
+                        <td>切换方波</td>
+                        <td>wave_sel=01，输出0或255</td>
+                        <td><span class="status pass">✓ 通过</span></td>
+                    </tr>
+                    <tr>
+                        <td>TEST3</td>
+                        <td>切换三角波</td>
+                        <td>wave_sel=10，线性递增递减</td>
+                        <td><span class="status pass">✓ 通过</span></td>
+                    </tr>
+                    <tr>
+                        <td>TEST4</td>
+                        <td>Freq+增加</td>
+                        <td>FCW增加107374</td>
+                        <td><span class="status pass">✓ 通过</span></td>
+                    </tr>
+                    <tr>
+                        <td>TEST5</td>
+                        <td>UART设置</td>
+                        <td>fcw_uart正确，模式切换</td>
+                        <td><span class="status pass">✓ 通过</span></td>
+                    </tr>
+                    <tr>
+                        <td>TEST6</td>
+                        <td>系统复位</td>
+                        <td>恢复默认值</td>
+                        <td><span class="status pass">✓ 通过</span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 第13页: 资源占用 -->
+        <div class="slide bg-purple" data-slide="13">
+            <h1 class="slide-title">📊 资源占用分析</h1>
+            <div class="stats-row">
+                <div class="stat-card">
+                    <div class="value">2.8%</div>
+                    <div class="label">LUT占用率</div>
+                </div>
+                <div class="stat-card">
+                    <div class="value">0.8%</div>
+                    <div class="label">FF占用率</div>
+                </div>
+                <div class="stat-card">
+                    <div class="value">15%</div>
+                    <div class="label">BRAM占用率</div>
+                </div>
+                <div class="stat-card">
+                    <div class="value">0%</div>
+                    <div class="label">DSP占用率</div>
+                </div>
+            </div>
+            <div style="margin-top: 40px; text-align: center; color: rgba(255,255,255,0.7); font-size: 1.1em;">
+                <p>💡 资源占用率低，有充足扩展空间，可添加更多波形或功能模块</p>
+            </div>
+        </div>
+
+        <!-- 第14页: 开发流程 -->
+        <div class="slide bg-blue" data-slide="14">
+            <h1 class="slide-title">🔨 开发流程</h1>
+            <div class="timeline">
+                <div class="timeline-item">
+                    <h4>📋 需求分析</h4>
+                    <p>确定设计目标，制定技术方案</p>
+                </div>
+                <div class="timeline-item">
+                    <h4>🏗️ 架构设计</h4>
+                    <p>划分功能模块，定义接口规范</p>
+                </div>
+                <div class="timeline-item">
+                    <h4>💻 代码编写</h4>
+                    <p>Verilog HDL实现各功能模块</p>
+                </div>
+                <div class="timeline-item">
+                    <h4>🧪 仿真验证</h4>
+                    <p>编写测试平台，验证功能正确性</p>
+                </div>
+                <div class="timeline-item">
+                    <h4>🔧 板级调试</h4>
+                    <p>综合实现，硬件测试验证</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 第15页: 总结 -->
+        <div class="slide bg-dark" data-slide="15">
+            <h1 class="slide-title">📝 总结与心得</h1>
+            <div class="content-grid">
+                <div class="card">
+                    <div class="card-icon green">✅</div>
+                    <h3>项目成果</h3>
+                    <p>完成DDS信号发生器设计，支持三种波形，频率分辨率达0.0233Hz</p>
+                </div>
+                <div class="card">
+                    <div class="card-icon teal">📚</div>
+                    <h3>技术收获</h3>
+                    <p>深入理解DDS原理，掌握Zynq开发流程，提高Verilog编程能力</p>
+                </div>
+                <div class="card">
+                    <div class="card-icon orange">🔮</div>
+                    <h3>改进方向</h3>
+                    <p>可扩展更多波形，添加LCD显示，实现PS-PL协同设计</p>
+                </div>
+                <div class="card">
+                    <div class="card-icon purple">💡</div>
+                    <h3>应用前景</h3>
+                    <p>教学实验、电子测试、通信系统调试等多领域应用</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 第16页: 致谢 -->
+        <div class="slide bg-gradient" data-slide="16">
+            <div class="thanks-content">
+                <div class="thanks-icon">🙏</div>
+                <h1 class="thanks-text">感谢聆听</h1>
+                <p class="thanks-subtext">欢迎提问与交流</p>
+                <div class="contact-info">
+                    <span>👥 彭云帆 · 向飞帆</span>
+                    <span>📚 通信233班</span>
+                    <span>👨‍🏫 指导教师：文斌</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 导航控制 -->
+    <div class="nav-controls">
+        <button class="nav-btn" onclick="prevSlide()">◀</button>
+        <button class="nav-btn" onclick="nextSlide()">▶</button>
+    </div>
+
+    <div class="page-indicator">
+        <span id="currentPage">1</span> / <span id="totalPages">16</span>
+    </div>
+
+    <script>
+        let currentSlide = 1;
+        const totalSlides = 16;
+
+        function updateSlide() {
+            // 更新进度条
+            const progress = (currentSlide / totalSlides) * 100;
+            document.getElementById('progressBar').style.width = progress + '%';
+
+            // 更新页码
+            document.getElementById('currentPage').textContent = currentSlide;
+
+            // 更新幻灯片状态
+            document.querySelectorAll('.slide').forEach((slide, index) => {
+                const slideNum = index + 1;
+                slide.classList.remove('active', 'prev');
+
+                if (slideNum === currentSlide) {
+                    slide.classList.add('active');
+                } else if (slideNum < currentSlide) {
+                    slide.classList.add('prev');
+                }
+            });
+        }
+
+        function nextSlide() {
+            if (currentSlide < totalSlides) {
+                currentSlide++;
+                updateSlide();
+            }
+        }
+
+        function prevSlide() {
+            if (currentSlide > 1) {
+                currentSlide--;
+                updateSlide();
+            }
+        }
+
+        // 键盘导航
+        document.addEventListener('keydown', (e) => {
+            switch(e.key) {
+                case 'ArrowRight':
+                case 'ArrowDown':
+                case ' ':
+                    e.preventDefault();
+                    nextSlide();
+                    break;
+                case 'ArrowLeft':
+                case 'ArrowUp':
+                    e.preventDefault();
+                    prevSlide();
+                    break;
+                case 'Home':
+                    currentSlide = 1;
+                    updateSlide();
+                    break;
+                case 'End':
+                    currentSlide = totalSlides;
+                    updateSlide();
+                    break;
+            }
+        });
+
+        // 鼠标滚轮导航
+        document.addEventListener('wheel', (e) => {
+            if (e.deltaY > 0) {
+                nextSlide();
+            } else {
+                prevSlide();
+            }
+        });
+
+        // 触摸滑动支持
+        let touchStartX = 0;
+        let touchEndX = 0;
+
+        document.addEventListener('touchstart', (e) => {
+            touchStartX = e.changedTouches[0].screenX;
+        });
+
+        document.addEventListener('touchend', (e) => {
+            touchEndX = e.changedTouches[0].screenX;
+            handleSwipe();
+        });
+
+        function handleSwipe() {
+            const diff = touchStartX - touchEndX;
+            if (Math.abs(diff) > 50) {
+                if (diff > 0) {
+                    nextSlide();
+                } else {
+                    prevSlide();
+                }
+            }
+        }
+
+        // 初始化
+        updateSlide();
+    </script>
+</body>
+</html>
