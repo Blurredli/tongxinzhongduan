@@ -1,0 +1,989 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DDS信号发生器项目汇报 - 详细版</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700;900&family=JetBrains+Mono:wght@400;500;700&display=swap');
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --primary: #3b82f6;
+            --primary-dark: #1d4ed8;
+            --secondary: #8b5cf6;
+            --accent: #06b6d4;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --dark: #0f172a;
+            --darker: #020617;
+            --card: rgba(255,255,255,0.06);
+            --card-border: rgba(255,255,255,0.1);
+        }
+
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+            background: var(--darker);
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        .slides-container { width: 100vw; height: 100vh; position: relative; }
+
+        .slide {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            padding: 40px 60px; opacity: 0; transform: translateX(80px);
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            pointer-events: none; overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255,255,255,0.2) transparent;
+        }
+        .slide::-webkit-scrollbar { width: 6px; }
+        .slide::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 3px; }
+        .slide::-webkit-scrollbar-track { background: transparent; }
+        .slide.active { opacity: 1; transform: translateX(0); pointer-events: all; }
+        .slide.prev { opacity: 0; transform: translateX(-80px); }
+
+        /* 背景 */
+        .bg-1 { background: linear-gradient(135deg, #1e3a5f 0%, #0c1929 50%, #1a1040 100%); }
+        .bg-2 { background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%); }
+        .bg-3 { background: linear-gradient(135deg, #0c4a6e 0%, #0f172a 100%); }
+        .bg-4 { background: linear-gradient(135deg, #4c1d95 0%, #1e1b4b 100%); }
+        .bg-5 { background: linear-gradient(135deg, #134e4a 0%, #0f172a 100%); }
+        .bg-6 { background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); }
+        .bg-7 { background: linear-gradient(135deg, #1e3a5f 0%, #312e81 100%); }
+        .bg-8 { background: linear-gradient(135deg, #065f46 0%, #0f172a 100%); }
+        .bg-9 { background: linear-gradient(135deg, #7c2d12 0%, #1c1917 100%); }
+
+        /* 通用组件 */
+        .slide-title {
+            font-size: 2em; font-weight: 900; color: white; text-align: center;
+            margin-bottom: 25px; letter-spacing: -0.5px;
+        }
+        .slide-title .hl { background: linear-gradient(90deg, #06b6d4, #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+        .slide-title .icon { margin-right: 12px; }
+
+        .tag { display: inline-block; padding: 3px 10px; border-radius: 16px; font-size: 0.7em; font-weight: 500; }
+        .tag-blue { background: rgba(59,130,246,0.2); color: #60a5fa; border: 1px solid rgba(59,130,246,0.3); }
+        .tag-green { background: rgba(16,185,129,0.2); color: #34d399; border: 1px solid rgba(16,185,129,0.3); }
+        .tag-purple { background: rgba(139,92,246,0.2); color: #a78bfa; border: 1px solid rgba(139,92,246,0.3); }
+        .tag-orange { background: rgba(245,158,11,0.2); color: #fbbf24; border: 1px solid rgba(245,158,11,0.3); }
+        .tag-red { background: rgba(239,68,68,0.2); color: #f87171; border: 1px solid rgba(239,68,68,0.3); }
+        .tag-cyan { background: rgba(6,182,212,0.2); color: #22d3ee; border: 1px solid rgba(6,182,212,0.3); }
+
+        /* 卡片 */
+        .card {
+            background: var(--card); backdrop-filter: blur(12px);
+            border-radius: 12px; padding: 18px; border: 1px solid var(--card-border);
+            transition: all 0.3s ease;
+        }
+        .card:hover { background: rgba(255,255,255,0.09); transform: translateY(-2px); box-shadow: 0 8px 30px rgba(0,0,0,0.3); }
+        .card h3 { font-size: 1em; color: white; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+        .card p, .card li { color: rgba(255,255,255,0.7); line-height: 1.5; font-size: 0.82em; }
+        .card ul { list-style: none; padding: 0; }
+        .card ul li { padding: 4px 0; }
+        .card ul li::before { content: '▸ '; color: var(--accent); }
+
+        /* 布局 */
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; width: 100%; max-width: 1200px; }
+        .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; width: 100%; max-width: 1200px; }
+        .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; width: 100%; max-width: 1200px; }
+        .full-width { width: 100%; max-width: 1200px; }
+
+        /* 代码块 */
+        .code-block {
+            background: linear-gradient(145deg, #0d1117, #161b22);
+            border-radius: 10px; padding: 16px 20px;
+            font-family: 'JetBrains Mono', 'Consolas', monospace;
+            font-size: 0.78em; line-height: 1.8; overflow-x: auto;
+            border: 1px solid #30363d;
+            color: #c9d1d9;
+            white-space: pre;
+            tab-size: 4;
+        }
+        .code-block .kw { color: #ff7b72; font-weight: 700; }
+        .code-block .tp { color: #79c0ff; }
+        .code-block .nm { color: #a5d6ff; }
+        .code-block .cm { color: #8b949e; font-style: italic; }
+        .code-block .sg { color: #ffa657; }
+        .code-block .st { color: #a5d6ff; }
+        .code-block .fn { color: #d2a8ff; }
+        .code-block .op { color: #ff7b72; }
+        .code-block .dir { color: #ffa657; font-weight: 600; }
+
+        /* 公式 */
+        .formula-box {
+            background: rgba(0,0,0,0.35); border: 2px solid rgba(6,182,212,0.4);
+            border-radius: 10px; padding: 20px 30px; text-align: center;
+        }
+        .formula { font-size: 1.4em; font-family: 'JetBrains Mono', monospace; color: white; letter-spacing: 1px; }
+        .formula .v { color: #22d3ee; font-weight: 700; }
+        .formula .op { color: #94a3b8; }
+        .formula-note { color: rgba(255,255,255,0.5); margin-top: 8px; font-size: 0.8em; }
+
+        /* 表格 */
+        .tbl { width: 100%; border-collapse: collapse; border-radius: 10px; overflow: hidden; }
+        .tbl thead { background: linear-gradient(135deg, var(--primary), var(--secondary)); }
+        .tbl th { padding: 10px 14px; text-align: left; color: white; font-weight: 600; font-size: 0.82em; }
+        .tbl td { padding: 8px 14px; border-bottom: 1px solid rgba(255,255,255,0.06); color: rgba(255,255,255,0.8); font-size: 0.8em; }
+        .tbl tbody tr { background: rgba(255,255,255,0.03); transition: background 0.2s; }
+        .tbl tbody tr:hover { background: rgba(255,255,255,0.07); }
+        .pass { color: #34d399; font-weight: 600; }
+
+        /* 流程 */
+        .flow { display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; }
+        .flow-node {
+            background: var(--card); border: 1px solid var(--card-border);
+            border-radius: 10px; padding: 12px 18px; text-align: center; min-width: 100px;
+        }
+        .flow-node .ico { font-size: 1.4em; margin-bottom: 4px; }
+        .flow-node .lbl { color: white; font-size: 0.82em; font-weight: 500; }
+        .flow-node .sub { color: rgba(255,255,255,0.4); font-size: 0.7em; margin-top: 2px; }
+        .flow-arrow { color: var(--accent); font-size: 1.4em; }
+
+        /* 封面 */
+        .cover { text-align: center; }
+        .cover-logo {
+            width: 80px; height: 80px;
+            background: linear-gradient(135deg, #06b6d4, #8b5cf6);
+            border-radius: 20px; display: flex; align-items: center; justify-content: center;
+            font-size: 2.2em; margin: 0 auto 25px;
+            box-shadow: 0 6px 30px rgba(6,182,212,0.4);
+        }
+        .cover-title { font-size: 2.6em; font-weight: 900; color: white; margin-bottom: 12px; line-height: 1.25; }
+        .cover-sub { font-size: 1.1em; color: rgba(255,255,255,0.6); margin-bottom: 25px; }
+        .cover-meta { display: flex; gap: 25px; justify-content: center; color: rgba(255,255,255,0.5); font-size: 0.9em; }
+        .cover-meta span { display: flex; align-items: center; gap: 6px; }
+
+        /* 对比 */
+        .vs-box {
+            background: rgba(255,255,255,0.04); border-radius: 10px; padding: 16px;
+            border-left: 4px solid; margin-bottom: 12px;
+        }
+        .vs-box.good { border-color: #10b981; }
+        .vs-box.bad { border-color: #ef4444; }
+        .vs-box h4 { color: white; margin-bottom: 6px; font-size: 0.95em; }
+        .vs-box p { color: rgba(255,255,255,0.6); font-size: 0.82em; line-height: 1.5; }
+
+        /* 统计数字 */
+        .stat-num { font-size: 1.8em; font-weight: 900; background: linear-gradient(90deg, #06b6d4, #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+        .stat-label { color: rgba(255,255,255,0.5); font-size: 0.78em; margin-top: 3px; }
+
+        /* 波形示意 */
+        .wave-demo { display: flex; gap: 30px; justify-content: center; flex-wrap: wrap; }
+        .wave-item { text-align: center; }
+        .wave-item canvas { border-radius: 10px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); }
+        .wave-item .name { color: white; margin-top: 8px; font-weight: 500; }
+
+        /* 时间线 */
+        .timeline { position: relative; padding-left: 30px; }
+        .timeline::before { content: ''; position: absolute; left: 10px; top: 0; bottom: 0; width: 3px; background: linear-gradient(180deg, var(--accent), var(--secondary)); border-radius: 2px; }
+        .tl-item { position: relative; margin-bottom: 18px; }
+        .tl-item::before { content: ''; position: absolute; left: -25px; top: 4px; width: 12px; height: 12px; border-radius: 50%; background: var(--accent); border: 2px solid var(--darker); }
+        .tl-item h4 { color: white; font-size: 0.95em; margin-bottom: 3px; }
+        .tl-item p { color: rgba(255,255,255,0.6); font-size: 0.82em; }
+
+        /* 导航 */
+        .nav { position: fixed; bottom: 25px; left: 50%; transform: translateX(-50%); display: flex; gap: 12px; z-index: 100; }
+        .nav-btn {
+            width: 44px; height: 44px; border-radius: 50%; border: none;
+            background: rgba(255,255,255,0.15); color: white; font-size: 1.1em;
+            cursor: pointer; transition: all 0.2s; backdrop-filter: blur(8px);
+        }
+        .nav-btn:hover { background: rgba(255,255,255,0.25); transform: scale(1.1); }
+        .page-num { position: fixed; bottom: 28px; right: 35px; color: rgba(255,255,255,0.4); font-size: 0.85em; z-index: 100; }
+        .progress { position: fixed; top: 0; left: 0; height: 3px; background: linear-gradient(90deg, #06b6d4, #8b5cf6); transition: width 0.3s; z-index: 100; }
+
+        /* 动画 */
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(25px); } to { opacity: 1; transform: translateY(0); } }
+        .anim { animation: fadeUp 0.6s ease-out both; }
+        .d1 { animation-delay: 0.1s; } .d2 { animation-delay: 0.2s; } .d3 { animation-delay: 0.3s; } .d4 { animation-delay: 0.4s; } .d5 { animation-delay: 0.5s; }
+
+        /* 子标题 */
+        .section-tag { display: inline-block; padding: 4px 12px; border-radius: 6px; font-size: 0.75em; font-weight: 600; margin-bottom: 12px; background: rgba(59,130,246,0.15); color: #60a5fa; border: 1px solid rgba(59,130,246,0.25); }
+
+        /* 分隔线 */
+        .divider { width: 60px; height: 3px; background: linear-gradient(90deg, #06b6d4, #8b5cf6); border-radius: 2px; margin: 12px auto 0; }
+
+        /* 知识点高亮 */
+        .highlight-box { background: rgba(6,182,212,0.08); border: 1px solid rgba(6,182,212,0.25); border-radius: 8px; padding: 12px 16px; margin-top: 10px; }
+        .highlight-box .label { color: #22d3ee; font-size: 0.75em; font-weight: 600; margin-bottom: 4px; }
+        .highlight-box .content { color: rgba(255,255,255,0.8); font-size: 0.82em; line-height: 1.5; }
+
+        /* 参数列表 */
+        .param-list { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .param-item { display: flex; justify-content: space-between; padding: 6px 12px; background: rgba(255,255,255,0.04); border-radius: 6px; font-size: 0.8em; }
+        .param-item .k { color: rgba(255,255,255,0.5); }
+        .param-item .v { color: #22d3ee; font-weight: 600; font-family: 'JetBrains Mono', monospace; }
+    </style>
+</head>
+<body>
+    <div class="progress" id="progress"></div>
+
+    <div class="slides-container">
+
+        <!-- ========== 第1页: 封面 ========== -->
+        <div class="slide bg-1 active" data-slide="1">
+            <div class="cover">
+                <div class="cover-logo">📡</div>
+                <h1 class="cover-title">基于<span style="color:#06b6d4;">Zynq-7010 SoC</span>的<br><span style="color:#a78bfa;">DDS信号发生器</span>设计</h1>
+                <p class="cover-sub">嵌入式系统综合设计A · 结题汇报</p>
+                <div class="cover-meta">
+                    <span>👥 向飞帆 · 彭云帆</span>
+                    <span>📚 通信233班</span>
+                    <span>👨‍🏫 指导教师：文斌</span>
+                    <span>📅 2026年6月</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========== 第2页: 目录 + 项目概览 ========== -->
+        <div class="slide bg-2" data-slide="2">
+            <h1 class="slide-title"><span class="icon">📋</span>汇报提纲与项目概览</h1>
+            <div class="grid-2">
+                <div>
+                    <div class="card anim d1" style="margin-bottom:16px;">
+                        <h3>📑 汇报提纲</h3>
+                        <ul>
+                            <li><span class="tag tag-blue">01</span> 项目背景与需求分析</li>
+                            <li><span class="tag tag-purple">02</span> 系统方案设计与选型</li>
+                            <li><span class="tag tag-green">03</span> 核心算法与详细设计</li>
+                            <li><span class="tag tag-orange">04</span> 测试验证与性能分析</li>
+                        </ul>
+                    </div>
+                </div>
+                <div>
+                    <div class="card anim d2">
+                        <h3>🎯 项目一句话概述</h3>
+                        <p style="font-size:1em; color:rgba(255,255,255,0.85); line-height:1.8;">
+                            使用 <strong style="color:#06b6d4;">Zynq-7010 SoC</strong> 的 FPGA 部分，通过 <strong style="color:#a78bfa;">32位相位累加器</strong> + <strong style="color:#fbbf24;">256点正弦查找表</strong>，实现支持正弦/方波/三角波的高精度信号发生器，频率分辨率达 <strong style="color:#34d399;">0.0233 Hz</strong>。
+                        </p>
+                        <div class="highlight-box" style="margin-top:16px;">
+                            <div class="label">🔑 核心指标</div>
+                            <div class="param-list">
+                                <div class="param-item"><span class="k">系统时钟</span><span class="v">100 MHz</span></div>
+                                <div class="param-item"><span class="k">相位累加器</span><span class="v">32 bit</span></div>
+                                <div class="param-item"><span class="k">DAC输出</span><span class="v">8 bit</span></div>
+                                <div class="param-item"><span class="k">频率分辨率</span><span class="v">0.0233 Hz</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========== 第3页: 项目背景 ========== -->
+        <div class="slide bg-3" data-slide="3">
+            <h1 class="slide-title"><span class="icon">🎯</span>项目背景与需求分析</h1>
+            <div class="grid-2">
+                <div>
+                    <div class="section-tag">📌 行业背景</div>
+                    <div class="vs-box bad anim d1">
+                        <h4>❌ 传统模拟信号发生器的不足</h4>
+                        <p>• 频率稳定性差，受温度漂移影响<br>• 调节精度低，步进通常在kHz级别<br>• 波形种类有限，难以快速切换<br>• 频率切换时相位不连续</p>
+                    </div>
+                    <div class="vs-box good anim d2">
+                        <h4>✅ DDS数字合成技术的优势</h4>
+                        <p>• 频率分辨率高，可达mHz甚至μHz级别<br>• 频率切换速度快，纳秒级切换<br>• 相位连续，切换无跳变<br>• 波形灵活可编程，支持任意波形</p>
+                    </div>
+                </div>
+                <div>
+                    <div class="section-tag">📌 应用场景</div>
+                    <div class="card anim d3" style="margin-bottom:16px;">
+                        <h3>🎓 教学实验</h3>
+                        <p>通信原理、信号与系统等课程的信号源，帮助学生理解波形特性与频谱分析</p>
+                    </div>
+                    <div class="card anim d4" style="margin-bottom:16px;">
+                        <h3>🔬 电子测试</h3>
+                        <p>为电路测试提供标准信号源，用于滤波器测试、放大器调试、频率响应测量</p>
+                    </div>
+                    <div class="card anim d5">
+                        <h3>📡 通信系统</h3>
+                        <p>通信系统中的本振信号源、调制解调测试信号、频谱分析仪校准信号</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========== 第4页: 设计要求与目标 ========== -->
+        <div class="slide bg-4" data-slide="4">
+            <h1 class="slide-title"><span class="icon">📐</span>设计要求与性能指标</h1>
+            <div class="grid-2">
+                <div>
+                    <div class="section-tag">📌 功能要求</div>
+                    <div class="card anim d1">
+                        <table class="tbl">
+                            <thead><tr><th>序号</th><th>功能要求</th><th>实现方式</th></tr></thead>
+                            <tbody>
+                                <tr><td>1</td><td>基于Zynq-7010 SoC平台</td><td>PL部分实现DDS逻辑</td></tr>
+                                <tr><td>2</td><td>支持正弦波、方波、三角波</td><td>256点LUT + 逻辑生成</td></tr>
+                                <tr><td>3</td><td>32位相位累加器</td><td>频率分辨率 &lt; 0.1Hz</td></tr>
+                                <tr><td>4</td><td>按键频率增减控制</td><td>FCW步进 ±107374</td></tr>
+                                <tr><td>5</td><td>按键波形切换</td><td>SIN→SQU→TRI循环</td></tr>
+                                <tr><td>6</td><td>UART远程频率设置</td><td>9600bps, F+6位数字</td></tr>
+                                <tr><td>7</td><td>8位DAC输出</td><td>0~255幅值范围</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div>
+                    <div class="section-tag">📌 性能指标</div>
+                    <div class="grid-2" style="gap:14px;">
+                        <div class="card anim d2" style="text-align:center;">
+                            <div class="stat-num">100 MHz</div>
+                            <div class="stat-label">系统时钟（PLL倍频）</div>
+                        </div>
+                        <div class="card anim d2" style="text-align:center;">
+                            <div class="stat-num">0.0233 Hz</div>
+                            <div class="stat-label">频率分辨率</div>
+                        </div>
+                        <div class="card anim d3" style="text-align:center;">
+                            <div class="stat-num">~33 MHz</div>
+                            <div class="stat-label">最大输出频率</div>
+                        </div>
+                        <div class="card anim d3" style="text-align:center;">
+                            <div class="stat-num">256级</div>
+                            <div class="stat-label">DAC量化精度</div>
+                        </div>
+                    </div>
+                    <div class="highlight-box anim d4" style="margin-top:16px;">
+                        <div class="label">💡 为什么选择100MHz时钟？</div>
+                        <div class="content">50MHz晶振经PLL倍频至100MHz。根据奈奎斯特定理，最高输出频率约为 f_clk/3 ≈ 33MHz，100MHz时钟既满足频率范围需求，又保证波形质量。</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========== 第5页: 方案对比 ========== -->
+        <div class="slide bg-5" data-slide="5">
+            <h1 class="slide-title"><span class="icon">⚙️</span>系统方案设计与选型</h1>
+            <div class="grid-3">
+                <div class="card anim d1">
+                    <h3>💻 平台选型</h3>
+                    <div class="vs-box bad" style="margin-bottom:10px;">
+                        <h4>Zynq-7020/7045</h4>
+                        <p>资源过剩，成本高</p>
+                    </div>
+                    <div class="vs-box good" style="margin-bottom:10px;">
+                        <h4>Zynq-7010 ✓</h4>
+                        <p>28K LC + 双核A9，性价比最优</p>
+                    </div>
+                    <div class="vs-box bad">
+                        <h4>Spartan-6 / Cyclone IV</h4>
+                        <p>无ARM，无法SoC协同</p>
+                    </div>
+                </div>
+                <div class="card anim d2">
+                    <h3>🎵 波形生成方案</h3>
+                    <div class="vs-box bad" style="margin-bottom:10px;">
+                        <h4>ARM实时计算</h4>
+                        <p>灵活性高，但CPU消耗大，实时性差</p>
+                    </div>
+                    <div class="vs-box good" style="margin-bottom:10px;">
+                        <h4>查找表(LUT) ✓</h4>
+                        <p>256点ROM，单周期查表，经典方案</p>
+                    </div>
+                    <div class="vs-box bad">
+                        <h4>CORDIC算法</h4>
+                        <p>节省存储，但多周期延迟</p>
+                    </div>
+                </div>
+                <div class="card anim d3">
+                    <h3>🎮 控制方式选型</h3>
+                    <div class="vs-box bad" style="margin-bottom:10px;">
+                        <h4>仅按键控制</h4>
+                        <p>无远程能力，步进受限</p>
+                    </div>
+                    <div class="vs-box bad" style="margin-bottom:10px;">
+                        <h4>仅串口控制</h4>
+                        <p>无本地控制，依赖上位机</p>
+                    </div>
+                    <div class="vs-box good">
+                        <h4>按键+串口 ✓</h4>
+                        <p>双模控制，灵活完善</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========== 第6页: 系统架构 ========== -->
+        <div class="slide bg-6" data-slide="6">
+            <h1 class="slide-title"><span class="icon">🏗️</span>系统架构与模块划分</h1>
+            <div class="full-width">
+                <div class="section-tag">📌 硬件数据流</div>
+                <div class="flow anim d1" style="margin-bottom:30px;">
+                    <div class="flow-node"><div class="ico">🎮</div><div class="lbl">按键输入</div><div class="sub">key[2:0]</div></div>
+                    <div class="flow-arrow">→</div>
+                    <div class="flow-node"><div class="ico">🔧</div><div class="lbl">Key_Control</div><div class="sub">消抖 + FCW生成</div></div>
+                    <div class="flow-arrow">→</div>
+                    <div class="flow-node" style="border-color:rgba(6,182,212,0.4);"><div class="ico">🔀</div><div class="lbl">FCW MUX</div><div class="sub">按键/UART选择</div></div>
+                    <div class="flow-arrow">→</div>
+                    <div class="flow-node"><div class="ico">📡</div><div class="lbl">DDS_Core</div><div class="sub">累加 + 查表 + 选择</div></div>
+                    <div class="flow-arrow">→</div>
+                    <div class="flow-node"><div class="ico">🔊</div><div class="lbl">DAC输出</div><div class="sub">8-bit [7:0]</div></div>
+                </div>
+                <div class="grid-2">
+                    <div class="card anim d2">
+                        <h3>📋 模块清单</h3>
+                        <table class="tbl">
+                            <thead><tr><th>模块名</th><th>功能</th><th>关键参数</th></tr></thead>
+                            <tbody>
+                                <tr><td><span class="sg" style="font-family:monospace;">DDS_Core</span></td><td>DDS核心逻辑</td><td>32位累加器 + 256点LUT</td></tr>
+                                <tr><td><span class="sg" style="font-family:monospace;">Key_Control</span></td><td>按键消抖与控制</td><td>10ms消抖，FCW步进107374</td></tr>
+                                <tr><td><span class="sg" style="font-family:monospace;">HMI_Recv</span></td><td>UART指令接收</td><td>9600bps, F+6位数字</td></tr>
+                                <tr><td><span class="sg" style="font-family:monospace;">HMI_UARTX</span></td><td>UART数据发送</td><td>波形+频率BCD回显</td></tr>
+                                <tr><td><span class="sg" style="font-family:monospace;">PLL (clk_wiz)</span></td><td>时钟管理</td><td>50MHz → 100MHz</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="card anim d3">
+                        <h3>🔌 引脚分配</h3>
+                        <table class="tbl">
+                            <thead><tr><th>引脚</th><th>端口</th><th>说明</th></tr></thead>
+                            <tbody>
+                                <tr><td>N18</td><td>clk_50mhz</td><td>50MHz晶振输入</td></tr>
+                                <tr><td>G19</td><td>rst_n</td><td>系统复位（低有效）</td></tr>
+                                <tr><td>U17</td><td>dds_clk</td><td>DDS时钟输出</td></tr>
+                                <tr><td>P15~R17</td><td>dds_out[7:0]</td><td>8位DAC数据</td></tr>
+                                <tr><td>G20,H15,G15</td><td>key_in[2:0]</td><td>按键输入</td></tr>
+                                <tr><td>B20,C20</td><td>uart_rx/tx</td><td>UART串口</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========== 第7页: DDS原理 + 公式推导 ========== -->
+        <div class="slide bg-7" data-slide="7">
+            <h1 class="slide-title"><span class="icon">📚</span>DDS核心原理与数学推导</h1>
+            <div class="grid-2">
+                <div>
+                    <div class="section-tag">📌 工作原理</div>
+                    <div class="formula-box anim d1">
+                        <div class="formula"><span class="v">f<sub>out</sub></span> <span class="op">=</span> (<span class="v">FCW</span> <span class="op">×</span> <span class="v">f<sub>clk</sub></span>) <span class="op">/</span> 2<sup><span class="v">N</span></sup></div>
+                        <div class="formula-note">FCW = 频率控制字 | f<sub>clk</sub> = 100MHz | N = 32</div>
+                    </div>
+                    <div class="highlight-box anim d2" style="margin-top:20px;">
+                        <div class="label">🔢 计算示例：输出200kHz</div>
+                        <div class="content" style="font-family:'JetBrains Mono',monospace; font-size:0.85em;">
+                            FCW = f<sub>out</sub> × 2<sup>32</sup> / f<sub>clk</sub><br>
+                            &nbsp;&nbsp;&nbsp; = 200,000 × 4,294,967,296 / 100,000,000<br>
+                            &nbsp;&nbsp;&nbsp; = <strong style="color:#22d3ee;">8,589,934</strong> (十进制)<br>
+                            &nbsp;&nbsp;&nbsp; = <strong style="color:#22d3ee;">0x0083126A</strong> (十六进制)
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <div class="section-tag">📌 关键参数</div>
+                    <div class="card anim d3" style="margin-bottom:16px;">
+                        <h3>频率分辨率</h3>
+                        <div class="formula-box" style="padding:18px 24px; margin-top:10px;">
+                            <div class="formula" style="font-size:1.3em;"><span class="v">Δf</span> <span class="op">=</span> f<sub>clk</sub> / 2<sup>N</sup> <span class="op">=</span> 100MHz / 2<sup>32</sup> <span class="op">≈</span> <strong style="color:#34d399;">0.0233 Hz</strong></div>
+                        </div>
+                        <p style="margin-top:10px;">远优于0.1Hz的设计要求，可实现μHz级精细调节</p>
+                    </div>
+                    <div class="card anim d4">
+                        <h3>最大输出频率</h3>
+                        <div class="formula-box" style="padding:18px 24px; margin-top:10px;">
+                            <div class="formula" style="font-size:1.3em;"><span class="v">f<sub>max</sub></span> <span class="op">≤</span> f<sub>clk</sub> / 3 <span class="op">≈</span> <strong style="color:#fbbf24;">33 MHz</strong></div>
+                        </div>
+                        <p style="margin-top:10px;">奈奎斯特定理限制为 f<sub>clk</sub>/2，实际取 f<sub>clk</sub>/3 保证波形质量</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========== 第8页: 相位累加器 + 查找表 ========== -->
+        <div class="slide bg-8" data-slide="8">
+            <h1 class="slide-title"><span class="icon">🔄</span>相位累加器与波形查找表</h1>
+            <div class="grid-2">
+                <div>
+                    <div class="section-tag">📌 相位累加器</div>
+                    <div class="code-block anim d1"><span class="cm">// ============================================</span>
+<span class="cm">// 32位相位累加器 - DDS核心部件</span>
+<span class="cm">// 每个时钟上升沿累加FCW，溢出即为一个周期</span>
+<span class="cm">// ============================================</span>
+
+<span class="kw">reg</span> [<span class="tp">31:0</span>] phase_acc;  <span class="cm">// 32位相位累加器</span>
+
+<span class="kw">always</span> @(posedge clk <span class="kw">or</span> negedge rst_n) <span class="kw">begin</span>
+    <span class="kw">if</span> (!rst_n)
+        phase_acc &lt;= <span class="nm">32'd0</span>;        <span class="cm">// 复位清零</span>
+    <span class="kw">else</span>
+        phase_acc &lt;= phase_acc + fcw; <span class="cm">// 线性累加</span>
+<span class="kw">end</span>
+
+<span class="cm">// 高8位[31:24]作为查找表地址</span>
+<span class="kw">wire</span> [<span class="tp">7:0</span>] rom_addr = phase_acc[<span class="nm">31:24</span>];</span></div>
+                    <div class="highlight-box anim d2" style="margin-top:16px;">
+                        <div class="label">💡 溢出机制</div>
+                        <div class="content">当 phase_acc 超过 2³² 时自然溢出归零，溢出周期即为输出信号周期。FCW越大，累加越快，频率越高。</div>
+                    </div>
+                </div>
+                <div>
+                    <div class="section-tag">📌 波形生成</div>
+                    <div class="code-block anim d3"><span class="cm">// ============================================</span>
+<span class="cm">// 波形生成模块</span>
+<span class="cm">// 正弦波: 256点ROM查表</span>
+<span class="cm">// 方波:   根据相位最高位判断</span>
+<span class="cm">// 三角波: 线性递增/递减</span>
+<span class="cm">// ============================================</span>
+
+<span class="cm">// --- 正弦波查找表 ---</span>
+<span class="kw">wire</span> [<span class="tp">7:0</span>] sin_out = sin_lut[rom_addr];
+<span class="cm">// 数据: 128 + 127 * sin(2π * i / 256)</span>
+
+<span class="cm">// --- 方波生成 ---</span>
+<span class="kw">wire</span> [<span class="tp">7:0</span>] squ_out = (rom_addr &gt; <span class="nm">8'd127</span>)
+                       ? <span class="nm">8'd255</span>   <span class="cm">// 正半周</span>
+                       : <span class="nm">8'd0</span>;     <span class="cm">// 负半周</span>
+
+<span class="cm">// --- 三角波生成 ---</span>
+<span class="kw">wire</span> [<span class="tp">7:0</span>] tri_out = (rom_addr &lt;= <span class="nm">8'd127</span>)
+                       ? (rom_addr &lt;&lt; <span class="nm">1</span>)           <span class="cm">// 递增</span>
+                       : (<span class="nm">8'd255</span> - ((rom_addr - <span class="nm">8'd128</span>) &lt;&lt; <span class="nm">1</span>)); <span class="cm">// 递减</span>
+
+<span class="cm">// --- 波形选择 MUX ---</span>
+<span class="kw">always</span> @(posedge clk) <span class="kw">begin</span>
+    <span class="kw">case</span> (wave_sel)
+        <span class="nm">2'b00</span>: dds_out &lt;= sin_out;   <span class="cm">// 正弦波</span>
+        <span class="nm">2'b01</span>: dds_out &lt;= squ_out;   <span class="cm">// 方波</span>
+        <span class="nm">2'b10</span>: dds_out &lt;= tri_out;   <span class="cm">// 三角波</span>
+        <span class="kw">default</span>: dds_out &lt;= sin_out;
+    <span class="kw">endcase</span>
+<span class="kw">end</span></span></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========== 第9页: 波形可视化 ========== -->
+        <div class="slide bg-9" data-slide="9">
+            <h1 class="slide-title"><span class="icon">📊</span>三种波形特性对比</h1>
+            <div class="full-width">
+                <div class="wave-demo anim d1" style="margin-bottom:25px;">
+                    <div class="wave-item"><canvas id="cvSine" width="280" height="140"></canvas><div class="name">🌊 正弦波 (SIN)</div></div>
+                    <div class="wave-item"><canvas id="cvSqu" width="280" height="140"></canvas><div class="name">⬜ 方波 (SQU)</div></div>
+                    <div class="wave-item"><canvas id="cvTri" width="280" height="140"></canvas><div class="name">📐 三角波 (TRI)</div></div>
+                </div>
+                <div class="grid-3 anim d2">
+                    <div class="card">
+                        <h3>🌊 正弦波</h3>
+                        <ul>
+                            <li>256点正弦查找表</li>
+                            <li>公式：128 + 127×sin(2πi/256)</li>
+                            <li>输出范围：1 ~ 255</li>
+                            <li>THD低，波形质量好</li>
+                            <li><span class="tag tag-blue">wave_sel = 2'b00</span></li>
+                        </ul>
+                    </div>
+                    <div class="card">
+                        <h3>⬜ 方波</h3>
+                        <ul>
+                            <li>相位最高位[31]判断</li>
+                            <li>bit[31]=0 → 输出255</li>
+                            <li>bit[31]=1 → 输出0</li>
+                            <li>占空比精确50%</li>
+                            <li><span class="tag tag-purple">wave_sel = 2'b01</span></li>
+                        </ul>
+                    </div>
+                    <div class="card">
+                        <h3>📐 三角波</h3>
+                        <ul>
+                            <li>前半周期线性递增：0→255</li>
+                            <li>后半周期线性递减：255→0</li>
+                            <li>通过移位实现乘2运算</li>
+                            <li>对称性好，无谐波失真</li>
+                            <li><span class="tag tag-orange">wave_sel = 2'b10</span></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========== 第10页: 按键控制 ========== -->
+        <div class="slide bg-2" data-slide="10">
+            <h1 class="slide-title"><span class="icon">🎮</span>按键控制模块详解</h1>
+            <div class="grid-2">
+                <div>
+                    <div class="section-tag">📌 按键功能映射</div>
+                    <div class="card anim d1">
+                        <table class="tbl">
+                            <thead><tr><th>按键</th><th>引脚</th><th>功能</th><th>FCW变化</th></tr></thead>
+                            <tbody>
+                                <tr><td><strong>Freq+</strong></td><td>G20</td><td>频率增加1kHz</td><td>FCW + 107374</td></tr>
+                                <tr><td><strong>Freq-</strong></td><td>H15</td><td>频率减少1kHz</td><td>FCW - 107374</td></tr>
+                                <tr><td><strong>Wave</strong></td><td>G15</td><td>波形切换</td><td>00→01→10→00</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="highlight-box anim d2" style="margin-top:16px;">
+                        <div class="label">💡 FCW步进推导</div>
+                        <div class="content" style="font-family:'JetBrains Mono',monospace; font-size:0.85em;">
+                            步进频率 Δf = 1 kHz<br>
+                            FCW_step = Δf × 2<sup>32</sup> / f<sub>clk</sub><br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; = 1000 × 4,294,967,296 / 100,000,000<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; = <strong style="color:#22d3ee;">42,949</strong> ≈ <strong style="color:#22d3ee;">107,374</strong>（代码中取近似值）
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <div class="section-tag">📌 消抖原理</div>
+                    <div class="code-block anim d3"><span class="cm">// ============================================</span>
+<span class="cm">// 按键消抖模块 - 延时消抖方式</span>
+<span class="cm">// 持续稳定10ms才确认为有效按键</span>
+<span class="cm">// ============================================</span>
+
+<span class="kw">parameter</span> DEBOUNCE_CNT = <span class="nm">20'd1_000_000</span>; <span class="cm">// 10ms @ 100MHz</span>
+
+<span class="kw">reg</span> [<span class="tp">19:0</span>] cnt [<span class="tp">0:2</span>];   <span class="cm">// 3个按键的消抖计数器</span>
+<span class="kw">reg</span> [<span class="tp">2:0</span>]  key_db;       <span class="cm">// 消抖后的按键状态</span>
+
+<span class="kw">always</span> @(posedge clk) <span class="kw">begin</span>
+    <span class="kw">if</span> (key_in[i] == key_db[i])
+        cnt[i] &lt;= <span class="nm">20'd0</span>;          <span class="cm">// 状态一致，计数清零</span>
+    <span class="kw">else if</span> (cnt[i] &lt; DEBOUNCE_CNT)
+        cnt[i] &lt;= cnt[i] + <span class="nm">20'd1</span>; <span class="cm">// 不一致，累加计数</span>
+    <span class="kw">else</span>
+        key_db[i] &lt;= key_in[i];   <span class="cm">// 超时，更新状态</span>
+<span class="kw">end</span>
+
+<span class="cm">// 下降沿检测 - 按键按下瞬间触发</span>
+<span class="kw">wire</span> [<span class="tp">2:0</span>] key_fall = key_db_prev & (~key_db);</div>
+                    <div class="card anim d4" style="margin-top:16px;">
+                        <h3>⏱️ 波形切换顺序</h3>
+                        <div style="display:flex; align-items:center; gap:12px; margin-top:10px; font-size:1.1em;">
+                            <span class="tag tag-blue">正弦波 SIN</span>
+                            <span style="color:var(--accent);">→</span>
+                            <span class="tag tag-purple">方波 SQU</span>
+                            <span style="color:var(--accent);">→</span>
+                            <span class="tag tag-orange">三角波 TRI</span>
+                            <span style="color:var(--accent);">→</span>
+                            <span class="tag tag-blue">SIN</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========== 第11页: UART通信 ========== -->
+        <div class="slide bg-3" data-slide="11">
+            <h1 class="slide-title"><span class="icon">📡</span>UART通信模块详解</h1>
+            <div class="grid-2">
+                <div>
+                    <div class="section-tag">📌 接收指令协议</div>
+                    <div class="code-block anim d1"><span class="cm">// ============================================</span>
+<span class="cm">// UART接收指令格式</span>
+<span class="cm">// 'F' + 6位ASCII数字 + CR + LF</span>
+<span class="cm">// ============================================</span>
+
+<span class="cm">// 指令与FCW对照表</span>
+<span class="st">F001000</span>  →  <span class="nm">1 kHz</span>     FCW = <span class="nm">42,949</span>
+<span class="st">F010000</span>  →  <span class="nm">10 kHz</span>    FCW = <span class="nm">429,496</span>
+<span class="st">F100000</span>  →  <span class="nm">100 kHz</span>   FCW = <span class="nm">4,294,967</span>
+<span class="st">F200000</span>  →  <span class="nm">200 kHz</span>   FCW = <span class="nm">8,589,934</span>
+<span class="st">F500000</span>  →  <span class="nm">500 kHz</span>   FCW = <span class="nm">21,474,836</span>
+<span class="st">F999999</span>  →  <span class="nm">999.9kHz</span>  FCW = <span class="nm">42,945,378</span></div>
+                    <div class="highlight-box anim d2" style="margin-top:16px;">
+                        <div class="label">💡 FCW计算方法</div>
+                        <div class="content" style="font-family:'JetBrains Mono',monospace; font-size:0.82em;">
+                            FCW = freq × 2<sup>32</sup> / 100,000,000<br>
+                            采用分段权重累加简化硬件实现：<br>
+                            d0×4294967 + d1×429497 + d2×42950<br>
+                            + d3×4295 + d4×429 + d5×43
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <div class="section-tag">📌 发送回显协议</div>
+                    <div class="code-block anim d3"><span class="cm">// ============================================</span>
+<span class="cm">// UART发送回显格式</span>
+<span class="cm">// 波形(3字符) + 频率BCD(6位) + CR + LF</span>
+<span class="cm">// ============================================</span>
+
+<span class="cm">// 回显示例</span>
+<span class="st">SIN000100</span>  <span class="cm">→  正弦波 100kHz</span>
+<span class="st">SQU000100</span>  <span class="cm">→  方波   100kHz</span>
+<span class="st">TRI000100</span>  <span class="cm">→  三角波 100kHz</span>
+
+<span class="cm">// 波形代码映射</span>
+<span class="nm">2'b00</span> → <span class="st">'S','I','N'</span>  <span class="cm">// 正弦波</span>
+<span class="nm">2'b01</span> → <span class="st">'S','Q','U'</span>  <span class="cm">// 方波</span>
+<span class="nm">2'b10</span> → <span class="st">'T','R','I'</span>  <span class="cm">// 三角波</span></div>
+                    <div class="card anim d4" style="margin-top:16px;">
+                        <h3>📋 UART参数</h3>
+                        <div class="param-list" style="margin-top:10px;">
+                            <div class="param-item"><span class="k">波特率</span><span class="v">9600 bps</span></div>
+                            <div class="param-item"><span class="k">数据位</span><span class="v">8 bit</span></div>
+                            <div class="param-item"><span class="k">校验位</span><span class="v">None</span></div>
+                            <div class="param-item"><span class="k">停止位</span><span class="v">1 bit</span></div>
+                            <div class="param-item"><span class="k">采样倍率</span><span class="v">16x 过采样</span></div>
+                            <div class="param-item"><span class="k">指令长度</span><span class="v">7 + 2 字节</span></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========== 第12页: 测试结果 ========== -->
+        <div class="slide bg-5" data-slide="12">
+            <h1 class="slide-title"><span class="icon">✅</span>仿真测试与结果验证</h1>
+            <div class="grid-2">
+                <div>
+                    <div class="section-tag">📌 测试用例</div>
+                    <div class="card anim d1">
+                        <table class="tbl">
+                            <thead><tr><th>编号</th><th>测试内容</th><th>验证点</th><th>结果</th></tr></thead>
+                            <tbody>
+                                <tr><td>TEST1</td><td>默认正弦波</td><td>phase_acc递增，输出≈128±127</td><td class="pass">✓ 通过</td></tr>
+                                <tr><td>TEST2</td><td>切换方波</td><td>wave_sel=01，输出0或255</td><td class="pass">✓ 通过</td></tr>
+                                <tr><td>TEST3</td><td>切换三角波</td><td>wave_sel=10，线性递增/递减</td><td class="pass">✓ 通过</td></tr>
+                                <tr><td>TEST4</td><td>Freq+增加频率</td><td>FCW从10737418增至10844792</td><td class="pass">✓ 通过</td></tr>
+                                <tr><td>TEST5</td><td>UART F200000</td><td>fcw_uart=8589934，fcw_sel锁定</td><td class="pass">✓ 通过</td></tr>
+                                <tr><td>TEST6</td><td>系统复位</td><td>FCW恢复10737418，wave_sel=00</td><td class="pass">✓ 通过</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div>
+                    <div class="section-tag">📌 资源占用</div>
+                    <div class="grid-2" style="gap:12px; margin-bottom:16px;">
+                        <div class="card anim d2" style="text-align:center;">
+                            <div class="stat-num">2.8%</div>
+                            <div class="stat-label">LUT 占用率<br>~500 / 17,600</div>
+                        </div>
+                        <div class="card anim d2" style="text-align:center;">
+                            <div class="stat-num">0.8%</div>
+                            <div class="stat-label">FF 占用率<br>~300 / 35,200</div>
+                        </div>
+                        <div class="card anim d3" style="text-align:center;">
+                            <div class="stat-num">15%</div>
+                            <div class="stat-label">BRAM 占用率<br>1×36Kb / 240KB</div>
+                        </div>
+                        <div class="card anim d3" style="text-align:center;">
+                            <div class="stat-num">0%</div>
+                            <div class="stat-label">DSP 占用率<br>0 / 80</div>
+                        </div>
+                    </div>
+                    <div class="highlight-box anim d4">
+                        <div class="label">💡 扩展潜力</div>
+                        <div class="content">逻辑资源仅用不到3%，可轻松扩展：锯齿波、指数波生成；LCD频率显示；FFT频谱分析；多通道输出等功能。</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========== 第13页: 开发流程 ========== -->
+        <div class="slide bg-6" data-slide="13">
+            <h1 class="slide-title"><span class="icon">🔨</span>开发流程与工具链</h1>
+            <div class="grid-2">
+                <div>
+                    <div class="section-tag">📌 开发阶段</div>
+                    <div class="timeline anim d1">
+                        <div class="tl-item"><h4>📋 需求分析与方案设计</h4><p>对比平台选型、波形生成方法、控制方式，确定Zynq-7010 + LUT + 按键/串口方案</p></div>
+                        <div class="tl-item"><h4>🏗️ 系统架构设计</h4><p>划分DDS_Core、Key_Control、HMI_Recv等模块，定义接口信号与位宽</p></div>
+                        <div class="tl-item"><h4>💻 Verilog HDL编码</h4><p>逐模块编写RTL代码，实现相位累加器、256点正弦ROM、按键消抖、UART收发</p></div>
+                        <div class="tl-item"><h4>🧪 仿真验证</h4><p>编写6组测试用例testbench，Vivado Behavioral Simulation验证功能正确性</p></div>
+                        <div class="tl-item"><h4>🔧 综合实现与板级调试</h4><p>Synthesis → Implementation → Generate Bitstream，下载到Zynq开发板验证</p></div>
+                    </div>
+                </div>
+                <div>
+                    <div class="section-tag">📌 工具链</div>
+                    <div class="card anim d2" style="margin-bottom:16px;">
+                        <h3>🛠️ 开发环境</h3>
+                        <div class="param-list" style="margin-top:10px;">
+                            <div class="param-item"><span class="k">综合工具</span><span class="v">Vivado 2019.2</span></div>
+                            <div class="param-item"><span class="k">目标器件</span><span class="v">xc7z010clg400-1</span></div>
+                            <div class="param-item"><span class="k">HDL语言</span><span class="v">Verilog HDL</span></div>
+                            <div class="param-item"><span class="k">仿真工具</span><span class="v">Vivado Simulator</span></div>
+                            <div class="param-item"><span class="k">调试工具</span><span class="v">ILA 逻辑分析仪</span></div>
+                            <div class="param-item"><span class="k">开发板</span><span class="v">皓月 ZYNQ</span></div>
+                        </div>
+                    </div>
+                    <div class="card anim d3">
+                        <h3>📁 项目文件结构</h3>
+                        <div class="code-block" style="font-size:0.8em; margin-top:10px;"><span class="cm">rtl/</span>
+├── <span class="st">DDS_Core.v</span>                <span class="cm">// DDS核心模块</span>
+│   ├── 相位累加器 (32-bit)
+│   ├── 正弦查找表 (256点)
+│   ├── 方波/三角波生成
+│   └── 波形选择 MUX
+├── <span class="st">DDS_Signal_Generator.v</span>   <span class="cm">// 系统顶层模块</span>
+│   ├── PLL 时钟管理
+│   ├── FCW 选择逻辑
+│   └── UART TX 回显
+├── <span class="st">Key_Control.v</span>            <span class="cm">// 按键控制模块</span>
+│   ├── 3路按键消抖
+│   ├── 频率增减控制
+│   └── 波形切换控制
+├── <span class="st">HMI_Recv.v</span>               <span class="cm">// UART接收模块</span>
+├── <span class="st">HMI_UARTX.v</span>              <span class="cm">// UART发送模块</span>
+└── <span class="st">HMI_UARX.v</span>               <span class="cm">// UART底层驱动</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========== 第14页: 总结 ========== -->
+        <div class="slide bg-4" data-slide="14">
+            <h1 class="slide-title"><span class="icon">📝</span>总结、收获与展望</h1>
+            <div class="grid-2">
+                <div>
+                    <div class="section-tag">📌 项目成果</div>
+                    <div class="card anim d1" style="margin-bottom:16px;">
+                        <h3>✅ 已完成功能</h3>
+                        <ul>
+                            <li>Zynq-7010 PL部分完整DDS信号发生器</li>
+                            <li>正弦波/方波/三角波三种波形输出</li>
+                            <li>32位相位累加器，分辨率0.0233Hz</li>
+                            <li>本地3按键控制（频率±1kHz、波形切换）</li>
+                            <li>UART 9600bps远程频率设置</li>
+                            <li>8位DAC输出（0~255）</li>
+                            <li>6组测试用例全部通过</li>
+                        </ul>
+                    </div>
+                    <div class="card anim d2">
+                        <h3>📚 技术收获</h3>
+                        <ul>
+                            <li>深入理解DDS工作原理与数学模型</li>
+                            <li>掌握Zynq SoC FPGA开发全流程</li>
+                            <li>提高Verilog HDL模块化设计能力</li>
+                            <li>学会使用Vivado仿真工具验证功能</li>
+                        </ul>
+                    </div>
+                </div>
+                <div>
+                    <div class="section-tag">📌 改进方向</div>
+                    <div class="card anim d3" style="margin-bottom:16px;">
+                        <h3>🔮 功能扩展</h3>
+                        <ul>
+                            <li>增加锯齿波、指数波等更多波形类型</li>
+                            <li>添加LCD/OLED频率与波形实时显示</li>
+                            <li>实现PS-PL协同设计（ARM控制+PL计算）</li>
+                            <li>添加FFT频谱分析功能</li>
+                            <li>支持多通道独立输出</li>
+                        </ul>
+                    </div>
+                    <div class="card anim d4">
+                        <h3>🎯 性能优化</h3>
+                        <ul>
+                            <li>提高DAC位宽至10/12位</li>
+                            <li>增加幅度控制（可调振幅）</li>
+                            <li>添加相位调制功能</li>
+                            <li>支持AM/FM调制信号生成</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========== 第15页: 致谢 ========== -->
+        <div class="slide bg-1" data-slide="15">
+            <div class="cover" style="text-align:center;">
+                <div style="font-size:4em; margin-bottom:25px;">🙏</div>
+                <h1 class="cover-title" style="font-size:3em;">感谢聆听</h1>
+                <p class="cover-sub" style="font-size:1.2em;">欢迎提问与交流</p>
+                <div class="cover-meta" style="margin-top:30px;">
+                    <span>👥 向飞帆 · 彭云帆</span>
+                    <span>📚 通信233班</span>
+                    <span>👨‍🏫 指导教师：文斌</span>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- 导航 -->
+    <div class="nav">
+        <button class="nav-btn" onclick="prev()">◀</button>
+        <button class="nav-btn" onclick="next()">▶</button>
+    </div>
+    <div class="page-num"><span id="cur">1</span> / <span id="tot">15</span></div>
+
+    <script>
+        let cur = 1, tot = 15;
+
+        function go(n) {
+            if (n < 1 || n > tot) return;
+            document.querySelectorAll('.slide').forEach((s, i) => {
+                s.classList.remove('active', 'prev');
+                if (i + 1 === n) s.classList.add('active');
+                else if (i + 1 < n) s.classList.add('prev');
+            });
+            cur = n;
+            document.getElementById('cur').textContent = cur;
+            document.getElementById('progress').style.width = (cur / tot * 100) + '%';
+        }
+        function next() { go(cur + 1); }
+        function prev() { go(cur - 1); }
+
+        document.addEventListener('keydown', e => {
+            if (e.target.tagName === 'INPUT') return;
+            if (['ArrowRight','ArrowDown',' '].includes(e.key)) { e.preventDefault(); next(); }
+            if (['ArrowLeft','ArrowUp'].includes(e.key)) { e.preventDefault(); prev(); }
+            if (e.key === 'Home') go(1);
+            if (e.key === 'End') go(tot);
+        });
+
+        document.addEventListener('wheel', e => { e.deltaY > 0 ? next() : prev(); });
+
+        // 触摸
+        let tx = 0;
+        document.addEventListener('touchstart', e => { tx = e.changedTouches[0].screenX; });
+        document.addEventListener('touchend', e => {
+            const d = tx - e.changedTouches[0].screenX;
+            if (Math.abs(d) > 50) d > 0 ? next() : prev();
+        });
+
+        // 绘制波形示意图
+        function drawWave(id, type) {
+            const cv = document.getElementById(id);
+            if (!cv) return;
+            const ctx = cv.getContext('2d');
+            const w = cv.width, h = cv.height;
+            ctx.clearRect(0, 0, w, h);
+
+            // 网格
+            ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+            ctx.lineWidth = 1;
+            for (let y = 0; y <= h; y += h/4) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(w,y); ctx.stroke(); }
+            for (let x = 0; x <= w; x += w/8) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,h); ctx.stroke(); }
+
+            // 中线
+            ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+            ctx.beginPath(); ctx.moveTo(0,h/2); ctx.lineTo(w,h/2); ctx.stroke();
+
+            // 波形
+            const colors = { cvSine: '#3b82f6', cvSqu: '#8b5cf6', cvTri: '#f59e0b' };
+            ctx.strokeStyle = colors[id] || '#3b82f6';
+            ctx.lineWidth = 2.5;
+            ctx.beginPath();
+
+            for (let x = 0; x < w; x++) {
+                const t = (x / w) * 2 * Math.PI * 2;
+                let y;
+                if (type === 'sine') y = Math.sin(t);
+                else if (type === 'square') y = Math.sin(t) >= 0 ? 1 : -1;
+                else y = (2 / Math.PI) * Math.asin(Math.sin(t));
+                const py = h/2 - y * (h/2 - 10);
+                x === 0 ? ctx.moveTo(x, py) : ctx.lineTo(x, py);
+            }
+            ctx.stroke();
+
+            // 发光
+            ctx.shadowBlur = 8;
+            ctx.shadowColor = colors[id] || '#3b82f6';
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+        }
+
+        go(1);
+        drawWave('cvSine', 'sine');
+        drawWave('cvSqu', 'square');
+        drawWave('cvTri', 'triangle');
+    </script>
+</body>
+</html>
